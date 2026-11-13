@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Бумажные бои</title>
+<link href="https://fonts.googleapis.com/css2?family=Neucha&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: школьная парта; лист бумаги (поле) занимает всё свободное место, под ним или справа от него узкая панель: герой, набор, кнопки */
+  --desk:#2f404e;
+  --desk-2:#243240;
+  --paper:#fbfaf6;
+  --pencil:#2a2a33;
+  --blue:#2c6bd8;
+  --red:#e2463a;
+  --marker:#ffd43b;
+  --display:"Neucha","Comic Sans MS","Segoe Print",cursive;
+  --body:"Neucha","Trebuchet MS",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--desk);
+  background-image:radial-gradient(circle at 30% 0%,#3a4e5f 0,var(--desk) 55%,var(--desk-2) 100%);
+  color:var(--paper);font-family:var(--body);font-size:17px;
+  display:flex;flex-direction:column;overflow:hidden;
+  -webkit-user-select:none;user-select:none;overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
+}
+[hidden]{display:none!important}
+button{touch-action:manipulation}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px 4px;flex:none}
+h1{font-family:var(--display);font-size:24px;line-height:1;margin:0;font-weight:400;letter-spacing:.5px;white-space:nowrap}
+h1 span{color:var(--marker)}
+.tools{display:flex;gap:8px;align-items:center}
+.snd{width:34px;height:30px;border:0;border-radius:6px;background:#445869;color:var(--paper);display:grid;place-items:center;padding:0;cursor:pointer;flex:none}
+.snd svg{width:20px;height:20px}
+.snd[aria-pressed="false"]{opacity:.6}
+.snd[aria-pressed="false"] .wave,.snd[aria-pressed="true"] .off{display:none}
+.papers{display:flex;gap:6px;align-items:center}
+.papers button{width:28px;height:28px;border-radius:6px;border:2px solid transparent;padding:0;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4);flex:none}
+.papers button[aria-pressed="true"]{border-color:var(--marker);transform:rotate(-4deg) scale(1.08)}
+.papers button:focus-visible,.btn:focus-visible,.item:focus-visible,.snd:focus-visible{outline:3px solid var(--marker);outline-offset:2px}
+.p-white{background:#fbfaf6}
+.p-album{background:#f1e7cc}
+.p-kraft{background:#c8a674}
+.p-grid{background:#fbfaf6;background-image:linear-gradient(#9db7e6 1px,transparent 1px),linear-gradient(90deg,#9db7e6 1px,transparent 1px);background-size:7px 7px}
+.p-lined{background:#fbfaf6;background-image:linear-gradient(#9db7e6 1px,transparent 1px);background-size:7px 7px}
+
+#stage{flex:1;min-height:0;min-width:0;position:relative}
+#cv{position:absolute;left:12px;top:6px;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.3) inset;touch-action:none;display:block;background:var(--paper)}
+#banner{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%) rotate(-1.5deg);z-index:5;
+  background:var(--marker);color:var(--pencil);padding:10px 18px 14px;border-radius:6px;text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);width:max-content;max-width:calc(100% - 28px);
+}
+#banner h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0}
+#banner p{margin:0 0 8px;font-size:17px;line-height:1.2;text-wrap:balance}
+#banner .btn{font-size:18px;padding:7px 12px}
+#banner .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#banner.in{animation:bnIn .45s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes bnIn{from{transform:translate(-50%,120%) rotate(6deg);opacity:0}to{transform:translateX(-50%) rotate(-1.5deg);opacity:1}}
+@media (prefers-reduced-motion:reduce){#banner.in{animation:none}}
+#toast{
+  position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);background:var(--pencil);color:var(--paper);
+  padding:8px 14px;border-radius:20px;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 40px);text-align:center;z-index:40
+}
+#toast.on{opacity:.97}
+#toast.warn{background:var(--red);color:#fff;font-size:19px;padding:12px 18px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.4);width:max-content}
+
+footer{padding:4px 12px 10px;display:flex;flex-direction:column;gap:6px;flex:none;min-width:0}
+/* панель героя: всегда одной высоты, чтобы лист не прыгал */
+#info{height:66px;flex:none;display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px 8px;overflow:hidden;font-size:15px;line-height:1.2;color:#d5dde4}
+#infoText{flex:1 1 100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:19px}
+#info b{color:var(--marker);font-weight:400}
+.hero{display:flex;gap:8px;align-items:center;flex:1 1 100%;min-width:0}
+.szbox{display:flex;gap:8px;align-items:center;flex:1 1 0;min-width:0;color:var(--paper);font-size:15px}
+.szbox input{flex:1;min-width:0;height:34px;margin:0;accent-color:var(--marker)}
+#blotbar{height:8px;width:100%;border-radius:4px;background:#1b2630;overflow:hidden;flex:none;margin-top:6px}
+#blotbar i{display:block;height:100%;width:100%;background:#4c79e0}
+
+.btn{
+  font:inherit;font-family:var(--display);font-size:20px;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;
+  background:#445869;color:var(--paper);box-shadow:0 3px 0 rgba(0,0,0,.35);white-space:nowrap
+}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.btn.go{flex:1;background:var(--red);color:#fff;font-size:24px;padding:7px 14px}
+.btn.dark{background:var(--pencil);color:var(--paper)}
+.btn.light{background:var(--paper);color:var(--pencil)}
+.btn.sm{font-size:19px;line-height:1.1;padding:7px 12px;min-width:42px;min-height:38px;box-shadow:0 2px 0 rgba(0,0,0,.35);flex:none}
+.btn.del{background:#7a3a3a}
+.btn.mark{background:var(--marker);color:var(--pencil);margin-left:auto}
+.btn[aria-pressed="true"]{background:var(--marker);color:var(--pencil)}
+.btn.light[aria-pressed="true"]{background:#e4edfc;box-shadow:0 0 0 2px var(--blue),0 3px 0 rgba(0,0,0,.35)}
+.bbar{display:flex;gap:6px 10px;align-items:center;justify-content:space-between;flex:1 1 100%;flex-wrap:wrap}
+.bbar .grp{display:flex;gap:6px}
+.bbar .btn.sm{padding:7px 9px;font-size:17px}
+body[data-mode="camp"] #random{display:none}
+
+/* набор героев: одна лента, листается вбок; героя тянут вверх на лист */
+#lib{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 6px;flex:none;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+#lib::-webkit-scrollbar{display:none}
+.item{
+  width:58px;height:66px;flex:none;border-radius:6px;border:2px solid transparent;background:var(--paper);color:var(--pencil);
+  padding:2px 2px 0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  font:inherit;font-size:12px;line-height:1.1;cursor:grab;touch-action:pan-x;box-shadow:0 2px 4px rgba(0,0,0,.35);overflow:hidden
+}
+.item:nth-child(odd){transform:rotate(-1.5deg)}
+.item:nth-child(even){transform:rotate(1.2deg)}
+.item img{width:50px;height:44px;object-fit:contain;pointer-events:none}
+.item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:2px}
+.item[aria-pressed="true"]{border-color:var(--marker);box-shadow:0 0 0 2px var(--marker),0 4px 8px rgba(0,0,0,.4);transform:translateY(-2px)}
+.item.add{background:transparent;color:var(--paper);border:2px dashed #8fa1b0;box-shadow:none;justify-content:center;gap:2px;cursor:pointer;transform:none}
+.item.add b{font-size:26px;line-height:.8;font-weight:400}
+.actions{display:flex;gap:8px;flex:none}
+body[data-state="battle"] #lib,body[data-state="over"] #lib{opacity:.35;pointer-events:none}
+body[data-state="battle"] .setup-only,body[data-state="over"] .setup-only{display:none}
+body[data-state="battle"] .btn.go{background:#445869}
+body[data-state="over"] .actions{visibility:hidden}
+#ghost{position:fixed;width:76px;height:76px;object-fit:contain;pointer-events:none;z-index:20;transform:translate(-50%,-80%) rotate(-6deg);filter:drop-shadow(0 6px 6px rgba(0,0,0,.4))}
+
+/* окна */
+.overlay{position:fixed;inset:0;background:rgba(20,28,36,.72);display:flex;align-items:center;justify-content:center;padding:14px;z-index:30}
+.sheet{background:var(--paper);color:var(--pencil);border-radius:8px;padding:14px 16px;width:min(400px,100%);max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);overscroll-behavior:contain}
+#dlg,#rig{z-index:34}#tip,#share{z-index:36}
+.code{font-size:44px;letter-spacing:6px;text-align:center;margin:4px 0;color:var(--blue);-webkit-user-select:text;user-select:text}
+.lrow input{flex:1;min-width:0;text-transform:uppercase}
+.sheet>*,.colL>*,.colR>*{flex-shrink:0}
+.colL,.colR{display:contents}
+.sheet h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0}
+.sheet label{font-size:15px;display:flex;flex-direction:column;gap:4px}
+.sheet label b{color:var(--blue);font-weight:400}
+.sheet input[type=text]{font:inherit;font-size:18px;padding:6px 8px;border:2px solid var(--pencil);border-radius:6px;background:#fff;color:var(--pencil);width:100%;-webkit-user-select:text;user-select:text}
+.sheet input[type=range]{width:100%;accent-color:var(--blue);margin:0;height:28px}
+.cap{font-size:15px;margin-bottom:4px}
+.cap small{color:#6b6b74;font-size:13px}
+.note{margin:4px 0 0;font-size:14px;line-height:1.25;color:#55555e}
+.roles.two{grid-template-columns:repeat(2,1fr)}.roles.five{grid-template-columns:repeat(5,1fr)}
+.roles button:disabled{opacity:.4;cursor:default}
+.lrow{display:flex;gap:6px;margin-top:6px}.lrow .btn{font-size:17px;padding:7px 10px}.lrow .btn:first-child{flex:1;text-align:left}
+.sheet .row.left{justify-content:flex-start}
+.sheet .papers{flex-wrap:wrap}.sheet .papers button{width:38px;height:38px;box-shadow:0 0 0 1px #b9b6ab}
+.sheet .papers button[aria-pressed="true"]{border-color:var(--blue);transform:none;box-shadow:0 0 0 2px var(--blue)}
+.lines{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}.lines label{font-size:13px;color:#55555e}.lines input[type=text]{font-size:15px;padding:5px 7px}
+.tipsheet ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:16px;line-height:1.3}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.roles button,.seg button{font:inherit;font-size:14px;line-height:1.15;text-align:center;padding:8px 4px;border-radius:6px;border:2px solid #b9b6ab;background:#fff;color:var(--pencil);cursor:pointer}
+.roles button[aria-pressed="true"],.seg button[aria-pressed="true"]{border-color:var(--blue);background:#e4edfc}
+.seg{display:flex;gap:6px;align-items:center;font-size:15px;flex-wrap:wrap}
+.seg button{padding:7px 10px;font-size:15px}
+.seg b{color:var(--blue);font-weight:400}
+#zoomIn,#zoomOut,#rigZoomIn,#rigZoomOut{min-width:44px;font-size:20px;line-height:1}
+.btn:disabled{opacity:.45}
+.seg span{margin-right:auto}
+.seg span:empty{flex:1}
+#dlgDesc,#edDesc{margin:0;font-size:14px;line-height:1.2;color:#55555e;min-height:18px}
+.sheet .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.cutcv{width:100%;max-height:44vh;object-fit:contain;border-radius:6px;touch-action:none;display:block;background:#c8a674;cursor:crosshair}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
+.strip button{flex:none;width:54px;height:46px;border-radius:6px;border:2px solid #b9b6ab;background:#fff;padding:2px;cursor:pointer}
+.strip button[aria-pressed="true"]{border-color:var(--blue);background:#e4edfc;box-shadow:0 0 0 2px var(--blue)}
+.strip img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.pv{width:100%;height:150px;border-radius:6px;display:block;position:sticky;top:-6px;z-index:2;box-shadow:0 3px 8px rgba(0,0,0,.3);background:#fbfaf6}
+
+@media (max-width:379px){
+  h1{font-size:20px}.papers button{width:24px;height:24px}
+  .btn.sm{padding:7px 9px;font-size:17px;min-width:38px}.hero{gap:6px}.szbox span{display:none}
+}
+/* телефон горизонтально: лист слева на всю высоту, узкая панель справа */
+@media (orientation:landscape) and (max-height:560px){
+  body{display:grid;grid-template-columns:minmax(0,1fr) 212px;grid-template-rows:auto minmax(0,1fr)}
+  #stage{grid-column:1;grid-row:1 / 3}
+  #cv{top:8px}
+  header{grid-column:2;grid-row:1;justify-content:flex-start;padding:8px 10px 2px 2px}
+  h1{display:none}
+  .tools{gap:6px;flex:1}.tools #menuBtn{flex:1}
+  footer{grid-column:2;grid-row:2;padding:4px 10px 8px 2px;min-height:0;overflow:hidden}
+  #info{height:100px;font-size:14px}
+  .hero{flex-wrap:wrap;gap:6px}
+  .btn.sm{font-size:17px;padding:6px 9px;min-width:36px;min-height:36px}
+  .szbox{flex:1 1 100%}
+  .btn.mark{margin-left:0;flex:1}
+  #lib{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;overflow-x:hidden;overflow-y:auto;flex:1 1 0;min-height:0;align-content:start;padding:3px 3px 12px;
+    -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent)}
+  .item{width:auto;height:58px;font-size:11px;touch-action:pan-y}.item img{width:100%;height:38px}
+  .actions{flex-wrap:wrap;gap:6px}
+  .btn{font-size:17px;padding:6px 8px}
+  .actions .btn{flex:1}
+  .btn.go{flex:1 1 100%;font-size:21px;padding:6px 8px}
+  #banner{bottom:10px;padding:8px 14px 10px}#banner p{margin-bottom:6px}
+  .overlay{padding:8px}
+  .sheet{width:min(820px,100%);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);column-gap:14px;overflow:hidden;height:100%;padding:10px 12px}
+  .colL,.colR{display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+  .sheet h2{font-size:22px}
+  .pv{position:static;height:auto;flex:1 1 90px;min-height:90px}
+  .cutcv{max-height:none;flex:1 1 100px;min-height:100px;height:100px}
+  .sheet.tipsheet{display:flex;width:min(560px,100%);height:auto;overflow-y:auto}
+  #info{height:100px}.bbar .btn.sm{padding:6px 7px;font-size:16px;min-width:0}
+}
+</style>
+</head>
+<body data-state="setup">
+<header>
+  <h1>Бумажные <span>бои</span></h1>
+  <div class="tools">
+    <button class="btn sm" id="menuBtn" type="button">Меню</button>
+    <button class="snd" id="snd" type="button" aria-pressed="true" aria-label="Звук" title="Звук">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path class="wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="stage">
+  <canvas id="cv"></canvas>
+  <div id="banner" hidden>
+    <h2 id="bTitle"></h2>
+    <p id="bText"></p>
+    <div class="row">
+      <button class="btn dark" id="again">Ещё раз</button>
+      <button class="btn light" id="edit">Переставить</button>
+      <button class="btn light" id="replayBtn" hidden>Повтор</button>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+</main>
+
+<footer>
+  <div id="info"><span id="infoText"></span>
+    <div class="hero" id="hero">
+      <label class="szbox" id="szBox" for="size" hidden><span>Размер</span><input type="range" id="size" min="0.5" max="3" step="0.1" value="1"></label>
+      <button type="button" class="btn sm del" id="heroDel" hidden title="Убрать героя с листа">Убрать</button>
+      <button type="button" class="btn sm mark" id="heroEd">Настроить героев</button>
+    </div>
+    <div class="bbar" id="bbar" hidden>
+      <span class="grp" role="group" aria-label="Приём по тапу на лист">
+        <button type="button" class="btn sm" data-v="blot" title="Клякса: бьёт всех рядом">Клякса</button>
+        <button type="button" class="btn sm" data-v="heal" title="Ластик: лечит всех рядом">Ластик</button>
+        <button type="button" class="btn sm" data-v="clip" title="Скрепка: держит на месте">Скрепка</button>
+      </span>
+      <span class="grp">
+        <button type="button" class="btn sm" id="spPause">Пауза</button>
+        <button type="button" class="btn sm" id="spFast" title="Вдвое быстрее">×2</button>
+      </span>
+    </div>
+    <span id="blotbar" hidden><i></i></span></div>
+  <div id="lib"></div>
+  <div class="actions">
+    <button class="btn setup-only" id="clear">Очистить</button>
+    <button class="btn setup-only" id="random">Случайно</button>
+    <button class="btn go" id="fight">В бой!</button>
+  </div>
+</footer>
+
+<input type="file" id="file" accept="image/*" hidden>
+<input type="file" id="arenaFile" accept="image/*" hidden>
+<input type="file" id="sndFile" accept="audio/*" capture hidden>
+<img id="ghost" alt="" hidden>
+
+<div class="overlay" id="dlg" hidden>
+  <form class="sheet" id="dlgForm">
+    <div class="colL">
+      <h2 id="dlgTitle">Новый герой</h2>
+      <canvas id="dlgCv" class="cutcv" aria-label="Вырезанный рисунок. Води пальцем, чтобы обвести, стереть или вернуть."></canvas>
+      <div class="seg" id="dlgTool" role="group" aria-label="Инструмент">
+        <button type="button" data-tool="3">Обвести</button>
+        <button type="button" data-tool="2">Стереть</button>
+        <button type="button" data-tool="1">Вернуть</button>
+        <span></span>
+        <button type="button" id="dlgReset">Сброс</button>
+      </div>
+      <div class="seg" role="group" aria-label="Масштаб">
+        <span>Масштаб <b id="zoomVal">×1.0</b>, можно двумя пальцами</span>
+        <button type="button" id="zoomOut" aria-label="Уменьшить">−</button>
+        <button type="button" id="zoomIn" aria-label="Увеличить">+</button>
+      </div>
+    </div>
+    <div class="colR">
+      <label for="dlgBrush">Размер кисти
+        <input type="range" id="dlgBrush" min="3" max="40" value="12">
+      </label>
+      <label for="dlgTol">Убрать фон: меньше или больше
+        <input type="range" id="dlgTol" min="12" max="110" value="34">
+      </label>
+      <label for="dlgName">Имя
+        <input type="text" id="dlgName" maxlength="14" autocomplete="off">
+      </label>
+      <div class="seg" id="dlgFace" role="group" aria-label="Куда смотрит герой на рисунке">
+        <span>На рисунке смотрит</span>
+        <button type="button" data-face="-1">влево</button>
+        <button type="button" data-face="0">прямо</button>
+        <button type="button" data-face="1">вправо</button>
+      </div>
+      <div class="roles" id="dlgRoles" role="group" aria-label="Кто он в бою"></div>
+      <p id="dlgDesc"></p>
+      <div class="row">
+        <button type="button" class="btn light" id="dlgCancel">Отмена</button>
+        <button type="submit" class="btn dark" id="dlgOk">Добавить</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="overlay" id="ed" hidden>
+  <form class="sheet" id="edForm">
+    <div class="colL">
+      <h2>Герои</h2>
+      <div class="strip" id="edStrip" role="group" aria-label="Какого героя настроить"></div>
+      <canvas id="edCv" class="pv" aria-label="Показ: герой дерётся с мишенями"></canvas>
+      <p id="edDesc"></p>
+    </div>
+    <div class="colR">
+      <label for="edName">Имя
+        <input type="text" id="edName" maxlength="14" autocomplete="off">
+      </label>
+      <label for="edSz"><span>Обычный размер <b id="edSzVal"></b></span>
+        <input type="range" id="edSz" min="0.5" max="3" step="0.1" value="1">
+      </label>
+      <label for="edPw"><span>Сила <b id="edPwVal"></b></span>
+        <input type="range" id="edPw" min="0.5" max="3" step="0.1" value="1">
+      </label>
+      <label for="edSp"><span>Скорость бега <b id="edSpVal"></b></span>
+        <input type="range" id="edSp" min="0.5" max="2" step="0.1" value="1">
+      </label>
+      <label for="edAs"><span>Скорость атаки <b id="edAsVal"></b></span>
+        <input type="range" id="edAs" min="0.5" max="2.5" step="0.1" value="1">
+      </label>
+      <div><div class="cap">Атаки <small>до трёх, первая главная</small></div><div class="roles" id="edAtk" role="group" aria-label="Атаки"></div></div>
+      <div><div class="cap">Характер</div><div class="roles" id="edChr" role="group" aria-label="Характер"></div></div>
+      <div><div class="cap">Как двигается</div><div class="roles" id="edMove" role="group" aria-label="Как двигается"></div></div>
+      <div><div class="cap">Что остаётся после поражения</div><div class="roles" id="edRem" role="group" aria-label="Что остаётся после поражения"></div></div>
+      <div><div class="cap">Что говорит <small>несколько вариантов через /</small></div>
+        <div class="lines">
+          <label for="edL_start">В начале боя<input type="text" id="edL_start" maxlength="120" autocomplete="off"></label>
+          <label for="edL_kill">Когда победил врага<input type="text" id="edL_kill" maxlength="120" autocomplete="off"></label>
+          <label for="edL_low">Когда ранен<input type="text" id="edL_low" maxlength="120" autocomplete="off"></label>
+          <label for="edL_win">После победы<input type="text" id="edL_win" maxlength="120" autocomplete="off"></label>
+        </div>
+      </div>
+      <div><div class="cap">Свой звук атаки <small>до полутора секунд</small></div><div class="row left">
+        <button type="button" class="btn light" id="sndPick">Выбрать или записать звук</button>
+        <button type="button" class="btn light" id="sndPlay" hidden>Послушать</button>
+        <button type="button" class="btn light" id="sndDel" hidden>Убрать</button>
+      </div></div>
+      <div><div class="cap">Рисунок</div><div class="row left">
+        <button type="button" class="btn light" id="edRig">Точки и части</button>
+        <button type="button" class="btn light" id="edRecut" hidden>Перевырезать</button>
+        <button type="button" class="btn light" id="edShare" hidden>Поделиться</button>
+      </div></div>
+      <div class="row">
+        <button type="button" class="btn light" id="edDel" hidden>Удалить героя</button>
+        <button type="button" class="btn light" id="edReset">Сбросить</button>
+        <button type="submit" class="btn dark">Готово</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="overlay" id="rig" hidden>
+  <div class="sheet">
+    <div class="colL">
+      <h2 id="rigTitle">Точки и части</h2>
+      <canvas id="rigCv" class="cutcv" aria-label="Рисунок героя: тапни точку или отметь часть"></canvas>
+      <div class="seg" role="group" aria-label="Масштаб">
+        <span>Масштаб <b id="rigZoomVal">×1.0</b>, можно двумя пальцами</span>
+        <button type="button" id="rigZoomOut" aria-label="Уменьшить">−</button>
+        <button type="button" id="rigZoomIn" aria-label="Увеличить">+</button>
+      </div>
+    </div>
+    <div class="colR">
+      <div class="seg" id="rigMode" role="group" aria-label="Что отмечаем">
+        <button type="button" data-v="muz">Выстрел</button>
+        <button type="button" data-v="at">Пила</button>
+        <button type="button" data-v="part">Подвижная часть</button>
+      </div>
+      <div id="rigPartBox" hidden>
+        <div class="roles" id="rigParts" role="group" aria-label="Части"></div>
+        <div class="seg" id="rigSub" role="group" aria-label="Что настраиваем у части" style="margin-top:8px">
+          <button type="button" data-v="pivot">Движение</button>
+          <button type="button" data-v="shape">Контур</button>
+          <button type="button" data-v="new">Новая часть</button>
+        </div>
+      </div>
+      <p id="rigHint" class="note"></p>
+      <p id="rigNote" class="note" hidden>Этот шаг можно пропустить: нажми «Добавить героя». Вернуться к разметке можно потом, в меню «Герои».</p>
+      <div id="rigDrawBox" hidden><div class="row left">
+        <button type="button" class="btn light" id="rigUndo">Отменить точку</button>
+        <button type="button" class="btn light" id="rigClose">Замкнуть контур</button>
+      </div></div>
+      <div id="rigShapeBox" hidden><div class="row left">
+        <button type="button" class="btn light" id="rigVDel">Удалить точку</button>
+      </div></div>
+      <div id="rigMoveBox" hidden>
+        <div class="cap">Как двигается выбранная часть</div>
+        <div class="roles" id="rigAnim" role="group" aria-label="Как двигается часть"></div>
+        <label for="rigA0" id="rigA0L" style="margin-top:8px"><span>Поворот в одну сторону (красная линия) <b id="rigA0V"></b></span>
+          <input type="range" id="rigA0" min="-180" max="0" step="5" value="-70"></label>
+        <label for="rigA1" id="rigA1L"><span>Поворот в другую сторону (синяя линия) <b id="rigA1V"></b></span>
+          <input type="range" id="rigA1" min="0" max="180" step="5" value="45"></label>
+        <label for="rigAmp" id="rigAmpL" style="margin-top:8px"><span><span id="rigAmpT">Размах движения</span> <b id="rigAmpV"></b></span>
+          <input type="range" id="rigAmp" min="0.2" max="3" step="0.1" value="1"></label>
+      </div>
+      <div class="row">
+        <button type="button" class="btn light" id="rigBack" hidden>Назад к вырезанию</button>
+        <button type="button" class="btn light" id="rigDel" hidden>Удалить часть</button>
+        <button type="button" class="btn dark" id="rigOk">Готово</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="menu" hidden>
+  <div class="sheet">
+    <div class="colL">
+      <h2>Меню</h2>
+      <div><div class="cap">Режим</div>
+        <div class="roles" id="mMode" role="group" aria-label="Режим">
+          <button type="button" data-v="free">Свободный бой</button>
+          <button type="button" data-v="duel">На двоих</button>
+          <button type="button" data-v="camp">Турнир</button>
+        </div>
+        <p class="note">На двоих: каждый расставляет свою половину втайне, по очереди. Турнир: десять боёв подряд, противники всё сильнее.</p>
+      </div>
+      <div id="mLevelsBox" hidden><div class="cap">Уровни турнира</div><div class="roles two" id="mLevels" role="group" aria-label="Уровни"></div></div>
+      <div><div class="cap">Лимит силы команды <small>в свободном бою и на двоих</small></div>
+        <div class="roles five" id="mLimit" role="group" aria-label="Лимит силы">
+          <button type="button" data-v="0">Нет</button><button type="button" data-v="100">100</button><button type="button" data-v="150">150</button><button type="button" data-v="200">200</button><button type="button" data-v="300">300</button>
+        </div>
+      </div>
+    </div>
+    <div class="colR">
+      <div><div class="cap">Арена <small>рисунок на листе</small></div>
+        <div class="roles five" id="mArena" role="group" aria-label="Арена">
+          <button type="button" data-v="none">Нет</button><button type="button" data-v="city">Город</button><button type="button" data-v="space">Космос</button><button type="button" data-v="forest">Лес</button><button type="button" data-v="photo">Своя</button>
+        </div>
+      </div>
+      <div><div class="cap">Бумага</div>
+    <div class="papers" role="group" aria-label="Бумага">
+      <button class="p-white" data-paper="white" aria-label="Белый лист" title="Белый лист" aria-pressed="true"></button>
+      <button class="p-album" data-paper="album" aria-label="Альбомный лист" title="Альбомный лист" aria-pressed="false"></button>
+      <button class="p-kraft" data-paper="kraft" aria-label="Крафт" title="Крафт" aria-pressed="false"></button>
+      <button class="p-grid" data-paper="grid" aria-label="В клетку" title="В клетку" aria-pressed="false"></button>
+      <button class="p-lined" data-paper="lined" aria-label="В линейку" title="В линейку" aria-pressed="false"></button>
+    </div>
+      </div>
+      <button type="button" class="btn light" id="mMusic" aria-pressed="false">Музыка выключена</button>
+      <div><div class="cap">Расстановки</div>
+        <div id="mLineups"></div>
+        <button type="button" class="btn light" id="mSave" style="margin-top:6px">Сохранить то, что на листе</button>
+      </div>
+      <div><label for="mCode">Получить героя по коду от друга</label>
+        <div class="lrow"><input type="text" id="mCode" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="ABC123"><button type="button" class="btn light" id="mGet">Получить</button></div>
+      </div>
+      <p class="note" id="syncText"></p>
+      <div class="row">
+        <button type="button" class="btn light" id="mHelp">Как играть</button>
+        <button type="button" class="btn dark" id="mClose">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="share" hidden>
+  <div class="sheet tipsheet">
+    <h2>Код героя</h2>
+    <p class="code" id="shareCode"></p>
+    <p class="note">Передай этот код другу. Он вводит его в «Меню», в поле «Получить героя по коду». Код работает у тех, кому открыт доступ к этой игре.</p>
+    <div class="row"><button type="button" class="btn light" id="shareCopy">Скопировать</button><button type="button" class="btn dark" id="shareOk">Готово</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="tip" hidden>
+  <div class="sheet tipsheet">
+    <h2>Как играть</h2>
+    <ol>
+      <li>Перетащи героев из ленты на лист: синие на одну половину, красные на другую.</li>
+      <li>Тапни героя на листе, чтобы поменять размер, убрать его или настроить атаки и характер.</li>
+      <li>Нажми «В бой!». Во время боя тапай по листу: клякса бьёт, ластик лечит, скрепка держит на месте.</li>
+      <li>Когда над героем загорится «ТАП!», тапни по нему: он запустит суперудар.</li>
+      <li>Кнопка «+ Рисунок» в ленте превращает фото рисунка в нового героя.</li>
+    </ol>
+    <div class="row"><button type="button" class="btn dark" id="tipOk">Понятно</button></div>
+  </div>
+</div>
+
+<script>
+/*JS*/</script>
+</body>
+</html>
