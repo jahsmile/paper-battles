@@ -224,18 +224,19 @@ function hintText(){
   const m=S.set.mode;
   if(m==='duel')return duelPhase===0?'Ставят синие. Красные, не подглядывайте!':'Ставят красные. Синие, не подглядывайте!';
   if(m==='camp')return 'Уровень '+(camp.i+1)+'. Собери команду не сильнее '+camp.budget+'.';
+  if(m==='path')return 'Поставь до трёх своих героев и побеждай: они растут в уровне.';
   return 'Перетащи героев на лист. Тапни героя, чтобы менять размер.';
 }
 function renderInfo(){
   const t=$('infoText');t.textContent='';
   const setup=state==='setup',battle=state==='battle',tg=setup?(selU?selU.item:selP?PROPITEMS.find(p=>p.prop===selP.kind):selected):null;
   $('blotbar').hidden=!battle;$('bbar').hidden=!battle;$('hero').hidden=!setup;t.hidden=battle;
-  $('szBox').hidden=!tg;$('heroDel').hidden=!(setup&&(selU||selP));
+  $('szBox').hidden=!tg||S.set.mode==='path';$('heroDel').hidden=!(setup&&(selU||selP));
   if(!setup)return;
   $('heroEd').textContent=tg&&!tg.prop?'Настроить':'Настроить героев';
   if(tg){
     const sz=selU?selU.s:selP?selP.s:tg.size,b=document.createElement('b');b.textContent=tg.name;
-    t.append(b,tg.prop?' · ×'+sz.toFixed(1)+' · '+tg.desc:' · ×'+sz.toFixed(1)+' · сила '+power(tg.D,sz)+' · '+tg.D.tag);
+    t.append(b,tg.prop?' · ×'+sz.toFixed(1)+' · '+tg.desc:' · ×'+sz.toFixed(1)+' · сила '+power(tg.D,sz)+' · '+tg.D.tag+(S.set.mode==='path'?' · '+pathTag(tg):''));
     if(document.activeElement!==sizeEl||+sizeEl.value!==sz)sizeEl.value=sz;
   }else t.textContent=hintText();
 }
@@ -343,6 +344,7 @@ let W=300,H=300,DPR=1,base=20,portrait=false,paper=S.set.paper,bg=null;
 let state='setup',units=[],snapshot=[],balls=[],stains=[],fx=[],shots=[],zones=[],gq=[];
 let wins=[0,0],ending=false,endT=0,winner=-1,blotCd=0,clock=0,shake=0,props=[],duelPhase=0,btool='blot',speedMul=1,paused=false,propTick=0;
 const camp={i:0,budget:0,name:''};
+const solo=()=>S.set.mode==='camp'||S.set.mode==='path'; // игрок расставляет только синих
 const BLOT_CD=2.5,MAX_UNITS=60;
 const sideOf=(x,y)=>portrait?(y>H/2?0:1):(x<W/2?0:1);
 // поле в «своих» координатах: a — от края синих (0) к краю красных (1), b — поперёк
@@ -368,7 +370,8 @@ function place(item,x,y,size){
   if(units.length>=MAX_UNITS){toast('На листе уже тесно');return null}
   const side=sideOf(x,y),m=S.set.mode;
   if(m==='duel'&&side!==duelPhase){toast(duelPhase===0?'Сейчас ставят синие, на своей половине':'Сейчас ставят красные, на своей половине');return null}
-  if(m==='camp'&&side!==0){toast('Это половина противника. Ставь героев на синюю');return null}
+  if((m==='camp'||m==='path')&&side!==0){toast('Это половина противника. Ставь героев на синюю');return null}
+  if(m==='path'){if(units.filter(u=>u.team===0).length>=3){toast('В команде уже трое героев');return null}const b=item.pit||item;item=pathItem(b,pathH(b.id).l);size=1}
   const u=makeUnit(item,x,y,side,size);units.push(u);sfx('pop',.03);return u;
 }
 const propR=q=>base*(q.kind==='rock'?1.1:q.kind==='glue'?1.8:1.4)*q.s;
@@ -379,7 +382,7 @@ function preset(){
    .forEach(([t,k,d,l])=>{const p=fromSide(t,d,l);units.push(makeUnit(by(k),p.x,p.y+base,t,1))});
 }
 function randomize(){
-  const m=S.set.mode,only=m==='duel'?duelPhase:m==='camp'?0:-1;
+  const m=S.set.mode,only=m==='duel'?duelPhase:solo()?0:-1;
   units=only<0?[]:units.filter(u=>u.team!==only);selU=selP=null;
   for(let t=0;t<2;t++){if(only>=0&&t!==only)continue;const n=3+((Math.random()*4)|0);
     for(let i=0;i<n;i++){const p=fromSide(t,rnd(.2,.85),rnd(.14,.9));const it=pick(library);units.push(makeUnit(it,p.x,p.y,t,it.id==='d-fort'?1:Math.round(rnd(.7,1.5)*10)/10))}}
@@ -431,7 +434,7 @@ cv.addEventListener('pointerdown',e=>{
   const p=evPos(e);
   if(replay)return;
   if(state==='battle'){
-    const cm=S.set.mode==='camp';let h=null;
+    const cm=solo();let h=null;
     for(const u of units)if(!u.dead&&u.sup>=1&&u.supT<=0&&(!cm||u.team===0)&&Math.abs(p.x-u.x)<Math.max(u.w*.55,24)&&p.y>u.y-u.h-26&&p.y<u.y+14)h=u;
     if(h&&!paused)fireSuper(h);else useTool(p.x,p.y);return;
   }
@@ -452,7 +455,7 @@ cv.addEventListener('pointermove',e=>{
   const ox=dragU.x,oy=dragU.y,m=S.set.mode;
   dragU.x=p.x+dragDX;dragU.y=p.y+dragDY;fit(dragU);
   const side=sideOf(dragU.x,dragU.y-dragU.h*.3);
-  if((m==='duel'&&side!==duelPhase)||(m==='camp'&&side!==0)){dragU.x=ox;dragU.y=oy;return}
+  if((m==='duel'&&side!==duelPhase)||((m==='camp'||m==='path')&&side!==0)){dragU.x=ox;dragU.y=oy;return}
   dragU.team=side;dragU.face=side===0?1:-1;
 });
 const dropU=()=>{
@@ -476,7 +479,7 @@ function startBattle(){
     const pb=teamPower()[0];if(S.set.limit&&pb>S.set.limit){toast('Синие сильнее лимита: '+pb+' из '+S.set.limit+'. Уберите кого-нибудь или уменьшите',1);return}
     duelPhase=1;selU=selP=selected=null;renderLib();setState('setup');toast('Теперь красные. Синие, не подглядывайте!');return;
   }
-  if(!n[0]||!n[1]){toast(m==='camp'?'Поставь своих героев на синюю половину':'Поставь героев на обе стороны листа');return}
+  if(!n[0]||!n[1]){toast(solo()?'Поставь своих героев на синюю половину':'Поставь героев на обе стороны листа');return}
   const lim=m==='camp'?camp.budget:S.set.limit,pw=teamPower();
   if(lim){
     if(pw[0]>lim){toast((m==='camp'?'Твоя команда':'Синие')+' сильнее лимита: '+pw[0]+' из '+lim+'. Убери кого-нибудь или уменьши',1);return}
@@ -505,9 +508,9 @@ function mz(u,i){const m=u.D.muz||DEF_MUZ;return pt(u,m[i%m.length])}
 const foesOf=u=>units.filter(o=>o.team!==u.team&&!o.dead);
 function hurt(u,d,sx,sy,push=.25,quiet=false,by=null){
   if(u.dead)return;
-  d*=u.D.armor||1;u.hp-=d;u.hitT=quiet?.06:.16;u.dmgAcc+=d;
-  if(by){by.dmgDone+=d;if(by.supT<=0)by.sup=Math.min(1,by.sup+d/260)}
-  if(u.supT<=0)u.sup=Math.min(1,u.sup+d/u.max*.5);
+  d*=u.D.armor||1;if(by&&!preview&&S.set.mode==='path'&&BEATS[elOf(by.item)]===elOf(u.item))d*=1.25;u.hp-=d;u.hitT=quiet?.06:.16;u.dmgAcc+=d;
+  if(by){by.dmgDone+=d;if(by.supT<=0&&!by.D.noSup)by.sup=Math.min(1,by.sup+d/260)}
+  if(u.supT<=0&&!u.D.noSup)u.sup=Math.min(1,u.sup+d/u.max*.5);
   if(push){const k=u.D.heavy?.12:1/Math.sqrt(u.s),dx=u.x-sx,dy=u.y-sy,l=Math.hypot(dx,dy)||1;u.x+=dx/l*base*push*k;u.y+=dy/l*base*push*k}
   if(!quiet){fx.push({k:'star',x:u.x,y:u.y-u.h*.5,t:0,life:.25,rot:Math.random()*6});sfx(d>=30?'thud':'hit',.06);scraps(u.x,u.y-u.h*.5,d>=30?4:2,sx<u.x?1:-1)}
   if(u.hp<=0){u.dead=true;u.deadT=u.D.rem==='wreck'?0:.4;u.hp=0;sfx('crumple',.08);scraps(u.x,u.y-u.h*.5,9,0);if(by&&by.team!==u.team)by.kills++;if(by&&!preview&&by.item.id&&by.team!==u.team)stat(by.item.id).k++;if(u.dmgAcc>=1){fx.push({k:'num',text:'−'+Math.round(u.dmgAcc),x:u.x,y:u.y-u.h*.9,vx:0,vy:-base*1.6,t:0,life:.8});u.dmgAcc=0}if(by&&!by.dead&&Math.random()<.4)say(by,'kill')}
@@ -578,7 +581,7 @@ function explode(x,y,rad,dmg,team,o={}){
 // приёмы игрока во время боя: клякса бьёт, ластик лечит, скрепка держит на месте
 function useTool(x,y){
   if(blotCd>0||ending||paused)return;blotCd=BLOT_CD;
-  const rad=base*2.6,cm=S.set.mode==='camp',inR=u=>!u.dead&&Math.hypot(u.x-x,u.y-u.h*.35-y)<rad+u.r*.5;
+  const rad=base*2.6,cm=solo(),inR=u=>!u.dead&&Math.hypot(u.x-x,u.y-u.h*.35-y)<rad+u.r*.5;
   if(btool==='heal'){
     stains.push({x,y,r:rad*.8,seed:(Math.random()*1e9)|0,t:0,col:'251,250,246',a:.92});word('ШУХ!',x,y-rad*.6,1.1);sfx('heal');
     units.forEach(u=>{if(inR(u)&&(!cm||u.team===0)){u.hp=Math.min(u.max,u.hp+60+u.max*.12);u.slowT=0;fx.push({k:'plus',x:u.x,y:u.y-u.h,t:0,life:.7})}});
@@ -815,12 +818,13 @@ function finish(){
       title=last?'Турнир пройден!':'Уровень пройден!';text=last?'Ты победил всех. Можно переиграть любой уровень из меню.':'Дальше: «'+LEVELS[camp.i+1].name+'»';again=last?'Ещё раз':'Дальше';camp.won=!last;
     }else{title='Не вышло';text='Попробуй другой состав, размер или приёмы в бою';camp.won=false}
   }
+  if(m==='path'){const r=pathFinish(winner===0);title=r.title;text=r.text;again=r.again}
   saveState();
   // праздник или грусть на листе: штамп, конфетти, лучи; табличка с кнопками выезжает чуть позже
   const mine=snapshot.filter(q=>q.team===0).length,left0=alive.filter(u=>u.team===0).length;
-  cele=m==='camp'?(winner===0?{kind:'win',col:'#d49a00',text:camp.i>=LEVELS.length-1?'ТУРНИР ПРОЙДЕН!':'УРОВЕНЬ ПРОЙДЕН!',stars:left0>=mine*.66?3:left0>=mine*.33?2:1}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'})
+  cele=m==='path'?(winner===0?{kind:'win',col:'#d49a00',text:'ПОБЕДА!'}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'}):m==='camp'?(winner===0?{kind:'win',col:'#d49a00',text:camp.i>=LEVELS.length-1?'ТУРНИР ПРОЙДЕН!':'УРОВЕНЬ ПРОЙДЕН!',stars:left0>=mine*.66?3:left0>=mine*.33?2:1}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'})
     :winner<0?{kind:'draw',col:'#8a7a3a',text:'НИЧЬЯ!'}:{kind:'win',col:TEAM_COL[winner],text:winner===0?'ПОБЕДА СИНИХ!':'ПОБЕДА КРАСНЫХ!'};
-  let best=null;if(winner>=0&&(m!=='camp'||winner===0))units.forEach(u=>{if(u.team===winner&&u.dmgDone>0&&(!best||u.dmgDone>best.dmgDone))best=u});
+  let best=null;if(winner>=0&&(!solo()||winner===0))units.forEach(u=>{if(u.team===winner&&u.dmgDone>0&&(!best||u.dmgDone>best.dmgDone))best=u});
   cele.mvp=best?{item:best.item,team:best.team,dmg:Math.round(best.dmgDone),kills:best.kills}:null;
   cele.t=0;cele.team=winner;if(cele.kind==='lose')sfx('lose');
   $('bTitle').textContent=title;$('bText').textContent=text;$('again').textContent=again;$('replayBtn').hidden=rec.n<6;
@@ -929,6 +933,7 @@ function drawUnit(u,t){
   if(!u.dead&&u.slowT>0){ctx.fillStyle='rgba(140,210,255,.3)';ctx.strokeStyle='#3aa0e8';ctx.lineWidth=1.6;rrect(u.x-u.w*.5,u.y-u.h,u.w,u.h*1.02,8);ctx.fill();ctx.stroke()}
   if(!u.dead){
     const top=u.y-u.h-6;
+    if(S.set.mode==='path'&&!preview){ctx.font=`${clamp(base*.8,13,20)}px Neucha,cursive`;ctx.textAlign='center';ctx.fillStyle=PENCIL;ctx.fillText(EL[elOf(u.item)].ico+' '+(u.item.lvl||1),u.x,u.y+clamp(base*.9,14,22))}
     if(u.slowT>0){ctx.strokeStyle='#3aa0e8';ctx.lineWidth=2;for(let i=0;i<3;i++){const sx=u.x+(i-1)*u.w*.3,syy=u.y-u.h*(.35+.25*((i*7)%3)/2)+Math.sin(t*3+i)*3;for(let j=0;j<3;j++){const a=j*1.047;ctx.beginPath();ctx.moveTo(sx-Math.cos(a)*5,syy-Math.sin(a)*5);ctx.lineTo(sx+Math.cos(a)*5,syy+Math.sin(a)*5);ctx.stroke()}}}
     if(u.holdT>0){
       const cx=u.x,cy=u.y-u.h*.55,z=clamp(u.h*.22,8,26);ctx.strokeStyle='#7d8590';ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';
@@ -938,7 +943,7 @@ function drawUnit(u,t){
     if(state==='battle'){
       if(u.supT>0||u.sup>=1){
         const pl=1+.12*Math.sin(t*10);ctx.strokeStyle=u.supT>0?'#ff8a1f':MARKER;ctx.lineWidth=u.supT>0?4:3;ctx.beginPath();ctx.ellipse(u.x,u.y,u.r*1.25*pl,Math.max(6,u.r*.42)*pl,0,0,7);ctx.stroke();
-        if(u.supT<=0&&!preview&&(S.set.mode!=='camp'||u.team===0)){
+        if(u.supT<=0&&!preview&&(!solo()||u.team===0)){
           const z=clamp(base*.8,13,19),y=top-10-Math.abs(Math.sin(t*6))*6;ctx.font=`${z}px Neucha,"Comic Sans MS",cursive`;ctx.textAlign='center';ctx.lineJoin='round';
           ctx.lineWidth=z*.28;ctx.strokeStyle=PENCIL;ctx.strokeText('ТАП!',u.x,y);ctx.fillStyle=MARKER;ctx.fillText('ТАП!',u.x,y);
         }
@@ -1205,9 +1210,9 @@ function drawOverlay(t){
     ctx.fillStyle=TEAM_COL[hide];ctx.textAlign='center';ctx.font=`${fs*1.3}px Neucha,"Comic Sans MS",cursive`;
     ctx.fillText(hide===0?'Синие уже расставились':'Красные ждут своей очереди',x+w/2,y+h/2);ctx.restore();
   }
-  if(m==='camp'&&state==='setup'){
+  if((m==='camp'||m==='path')&&state==='setup'){
     ctx.fillStyle='rgba(42,42,51,.75)';ctx.textAlign='center';ctx.font=`${fs}px Neucha,"Comic Sans MS",cursive`;
-    const tx='Уровень '+(camp.i+1)+' · '+camp.name;
+    const tx=m==='path'?'Ступень '+(PS().rung+1):'Уровень '+(camp.i+1)+' · '+camp.name;
     if(portrait)ctx.fillText(tx,W/2,H/2-8);else{ctx.save();ctx.translate(W/2-8,H/2);ctx.rotate(-Math.PI/2);ctx.fillText(tx,0,0);ctx.restore()}
   }
   if(state==='over'&&cele)drawCele(t);
@@ -1361,7 +1366,7 @@ $('dlgForm').addEventListener('submit',e=>{
   const name=($('dlgName').value.trim()||'Герой').slice(0,14),src=img.toDataURL('image/webp',.9),raw=pendingSrc.toDataURL('image/jpeg',.75),mask=maskURL(keep);
   let it=recutIt;
   if(it){Object.assign(it,{name0:name,role:pendingRole,face:pendingFace,base:customD(pendingRole,img),src,raw,mask,tol});buildD(it);(pv.save?pv.save.units:units).forEach(u=>{if(u.item===it){u.D=it.D;u.cds=u.D.atks.map(()=>.4);if(!preview)applySize(u)}})}
-  else{it={id:'c-'+Date.now(),name0:name,role:pendingRole,face:pendingFace,base:customD(pendingRole,img),src,raw,mask,tol,custom:true,size:1,ov:null};buildD(it);rigNew=it}
+  else{it={id:'c-'+Date.now(),name0:name,role:pendingRole,face:pendingFace,base:customD(pendingRole,img),src,raw,mask,tol,custom:true,size:1,ov:null};{const sc=scanImg(img);it.ov={el:sc.el,cool:sc.cool};OV[it.id]=it.ov}buildD(it);rigNew=it}
   an=pendingSrc=null;$('dlg').hidden=true;saveCustom();cloudMark('h:'+it.id);renderLib();
   if(recutIt&&!$('ed').hidden){recutIt=null;selectEd(it)}recutIt=null;
   if(rigNew){edIt=rigNew;edOv=ovFor(rigNew);$('edName').value=rigNew.name0;rigOpen()} // следующий шаг: разметка, герой попадёт в набор после неё
@@ -1460,12 +1465,12 @@ function toast(msg,warn){const t=$('toast');t.textContent=msg;t.classList.toggle
 $('fight').onclick=()=>{if(state==='setup')startBattle();else if(state==='battle'){restore();if(S.set.mode==='duel')duelPhase=0;setState('setup')}};
 $('clear').onclick=()=>{
   const m=S.set.mode;
-  if(m==='duel')units=units.filter(u=>u.team!==duelPhase);else if(m==='camp')units=units.filter(u=>u.locked);else{units=[];props=[]}
+  if(m==='duel')units=units.filter(u=>u.team!==duelPhase);else if(solo())units=units.filter(u=>u.locked);else{units=[];props=[]}
   selU=selP=null;renderInfo();
 };
 $('random').onclick=randomize;
-$('again').onclick=()=>{if(S.set.mode==='camp'&&camp.won){loadLevel(camp.i+1);setState('setup')}else begin()};
-$('edit').onclick=()=>{restore();if(S.set.mode==='duel')duelPhase=0;setState('setup')};
+$('again').onclick=()=>{if(S.set.mode==='path'){pathLoad(true);setState('setup')}else if(S.set.mode==='camp'&&camp.won){loadLevel(camp.i+1);setState('setup')}else begin()};
+$('edit').onclick=()=>{if(S.set.mode==='path')pathLoad(true);else restore();if(S.set.mode==='duel')duelPhase=0;setState('setup')};
 const sndBtn=$('snd');sndBtn.setAttribute('aria-pressed',muted?'false':'true');
 sndBtn.onclick=()=>{muted=!muted;S.set.mute=muted;sndBtn.setAttribute('aria-pressed',muted?'false':'true');saveState();if(!muted)sfx('pop')};
 function setPaper(p){

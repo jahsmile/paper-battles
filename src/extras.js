@@ -95,7 +95,8 @@ let lastMode=S.set.mode;
 function applyMode(init){
   const m=S.set.mode;document.body.dataset.mode=m;duelPhase=0;selU=selP=null;
   if(m==='camp')loadLevel(S.camp.level);
-  else{units.forEach(u=>{u.locked=false});if(!init&&lastMode==='camp'){units=[];preset()}if(m==='duel'&&!init)units=[]}
+  else if(m==='path')pathLoad(false);
+  else{units.forEach(u=>{u.locked=false});if(!init&&(lastMode==='camp'||lastMode==='path')){units=[];preset()}if(m==='duel'&&!init)units=[]}
   lastMode=m;$('fight').textContent=fightLabel();renderInfo();
 }
 
@@ -205,7 +206,7 @@ function cleanOv(o){
   o=o||{};
   return{pw:num(o.pw,.5,3,1),sp:num(o.sp,.5,2,1),as:num(o.as,.5,2.5,1),size:num(o.size,.5,3,1),
     atks:(Array.isArray(o.atks)?o.atks:[]).filter(k=>has(ATK,k)).slice(0,3),chr:has(CHR,o.chr)?o.chr:'own',idle:has(MOVES,o.idle)?o.idle:'own',rem:has(REMAINS,o.rem)?o.rem:'ball',name:'',
-    muz:pt2(o.muz),at:pt2(o.at),
+    muz:pt2(o.muz),at:pt2(o.at),el:has(EL,o.el)?o.el:'',cool:num(o.cool,0,5,0),
     parts:(Array.isArray(o.parts)?o.parts:[]).slice(0,4).map(p=>({poly:(Array.isArray(p&&p.poly)?p.poly:[]).slice(0,60).map(pt2).filter(Boolean),pv:pt2(p&&p.pv)||[.5,.5],anim:has(PARTANIM,p&&p.anim)?p.anim:'swing',a0:num(p&&p.a0,-180,0,-70),a1:num(p&&p.a1,0,180,45),amp:num(p&&p.amp,.2,3,1)})).filter(p=>p.poly.length>2)};
 }
 $('edShare').onclick=async()=>{
@@ -408,7 +409,7 @@ $('rigVDel').onclick=()=>{const cur=edOv.parts[rigSel];if(!cur||rigVert<0||cur.p
 $('rigDel').onclick=()=>{if(!edOv.parts[rigSel])return;edOv.parts=edOv.parts.filter((p,i)=>i!==rigSel);rigSel=edOv.parts.length-1;rigSub=rigSel>=0?'pivot':'new';rigVert=-1;rigChanged()};
 $('rigOk').onclick=()=>{
   $('rig').hidden=true;commitEd();
-  if(rigNew){const it=rigNew;rigNew=null;library.push(it);selected=it;selU=selP=null;saveCustom();cloudMark('h:'+it.id);renderLib();toast('Герой «'+it.name+'» в наборе. Перетащи его на лист');return}
+  if(rigNew){const it=rigNew;rigNew=null;library.push(it);selected=it;selU=selP=null;saveCustom();cloudMark('h:'+it.id);renderLib();toast('Герой «'+it.name+'» в наборе. Перетащи его на лист');showCard(it,'scan');return}
   renderEd();pvStart();
 };
 $('rigBack').onclick=()=>{if(!rigNew)return;commitEd();$('rig').hidden=true;openRecut(rigNew)};
@@ -530,21 +531,23 @@ arenaLoad();
 /* ---------- общая галерея героев: читаем из GitHub, пишем через свой сервер ---------- */
 const gal={api:'',base:'',items:[],recs:new Map(),shown:0,busy:false};
 fetch('gallery.json').then(r=>r.ok?r.json():null).then(c=>{
-  if(c&&typeof c.api==='string'&&/^https?:\/\//.test(c.api)){gal.api=c.api.replace(/\/+$/,'');$('mGalBox').hidden=false}
+  if(c&&typeof c.api==='string'&&/^https?:\/\//.test(c.api)){gal.api=c.api.replace(/\/+$/,'');$('mGalBox').hidden=false;galPreload()}
 }).catch(()=>{});
 const galOk=r=>r&&typeof r.src==='string'&&r.src.indexOf('data:image/')===0&&r.src.length<=240000&&has(ARCH,r.role);
 async function galRec(id){
   if(gal.recs.has(id))return gal.recs.get(id);
   const r=await fetch(gal.base+id+'.json').then(x=>x.ok?x.json():null).catch(()=>null),v=galOk(r)?r:null;
+  if(v)v._pass=await fetch(gal.base.replace(/heroes\/$/,'meta/')+id+'.json').then(x=>x.ok?x.json():null).catch(()=>null);
   gal.recs.set(id,v);return v;
 }
 function galItem(id,r){ // гость: герой из галереи, которого нет в наборе
   return new Promise(res=>{const im=new Image();im.onerror=()=>res(null);im.onload=()=>{
     const n={id:'g-'+id,name0:String(r.name||'Герой').slice(0,14),role:r.role,src:r.src,face:r.face===1||r.face===-1?r.face:0,base:customD(r.role,im),custom:true,guest:true,size:1,ov:cleanOv(r.ov)};
-    buildD(n);res(n)};im.src=r.src});
+    buildD(n);if(r._pass)applyPass(n,r._pass,true);res(n)};im.src=r.src});
 }
 function galTake(id,r){
   const nid='c-'+Date.now(),name=String(r.name||'Герой').slice(0,14);OV[nid]=cleanOv(r.ov);
+  if(r._pass){const tmp={id:nid,ov:OV[nid]};applyPass(tmp,r._pass,true,true)}
   addCustomRec({id:nid,name,role:r.role,face:r.face===1||r.face===-1?r.face:0,src:r.src,raw:'',mask:'',tol:34});
   saveState();setTimeout(()=>{saveCustom();if(cloud.db)cloudMark('h:'+nid)},700);toast('Герой «'+name+'» добавлен в набор');
 }
@@ -603,6 +606,107 @@ $('pubOk').onclick=async()=>{
     const x=await fetch(gal.api+'/hero',{method:'POST',headers:{'content-type':'text/plain'},body});
     if(x.status===429){toast('Слишком много отправок. Попробуй позже');return}
     if(!x.ok)throw 0;
+    const j=await x.json().catch(()=>null);if(j&&j.id){it.ov=Object.assign({},it.ov||{},{gid:j.id});OV[it.id]=it.ov;if(edIt===it&&edOv)edOv.gid=j.id;saveState()}
     toast('Герой отправлен в галерею');
   }catch(err){toast('Не получилось отправить: нет связи')}
 };
+
+/* ---------- стихии, первичный осмотр рисунка на устройстве, паспорт героя ---------- */
+const EL={fire:{name:'Огонь',ico:'🔥'},ice:{name:'Лёд',ico:'❄️'},steel:{name:'Сталь',ico:'🛡️'}};
+const BEATS={fire:'ice',ice:'steel',steel:'fire'};
+const EL0={king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
+function elOf(it){const o=it.ov;if(o&&EL[o.el])return o.el;const b=it.pit||it;return EL0[String(b.id).slice(2)]||b._el||(b._el=b.D&&b.D.img?scanImg(b.D.img).el:'steel')}
+// первичный осмотр: стихия по цвету, «крутость» по числу деталей и красок
+function scanImg(img){
+  const n=64,c=document.createElement('canvas');c.width=c.height=n;
+  let d;try{const x=c.getContext('2d',{willReadFrequently:true}),k=Math.min(n/img.width,n/img.height);x.drawImage(img,0,0,img.width*k,img.height*k);d=x.getImageData(0,0,n,n).data}catch(err){return{el:'steel',cool:3}}
+  let warm=0,cold=0,grey=0,cnt=0,edges=0;const hues=new Set();
+  for(let i=0;i<n*n;i++){
+    if(d[i*4+3]<128)continue;const r=d[i*4],g=d[i*4+1],b=d[i*4+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0,l=(r+g+b)/3;cnt++;
+    if(i%n<n-1&&d[i*4+7]>=128&&Math.abs(l-(d[i*4+4]+d[i*4+5]+d[i*4+6])/3)>40)edges++;
+    if(l>225&&s<.12)continue; // чистая бумага внутри контура
+    if(s<.22){grey+=.6;continue}
+    let h=mx===r?((g-b)/(mx-mn))%6:mx===g?(b-r)/(mx-mn)+2:(r-g)/(mx-mn)+4;h=(h*60+360)%360;hues.add((h/45)|0);
+    if(h<70||h>320)warm+=s;else if(h>160&&h<300)cold+=s;else grey+=.4;
+  }
+  const el=warm>cold&&warm>grey*.3?'fire':cold>=warm&&cold>grey*.3?'ice':'steel';
+  return{el,cool:clamp(Math.round(1+(edges/Math.max(1,cnt)-.15)*10+hues.size*.25),1,5)};
+}
+const passLang=()=>LANG==='ru'||LANG==='uk'?'ru':'en';
+const passText=v=>v&&typeof v==='object'?String(v[passLang()]||v.en||v.ru||''):typeof v==='string'?v:'';
+// паспорт: кто нарисован, стихия, характер, атаки, подвижные части и реплики
+function applyPass(it,P,quiet,noBuild){
+  const o=Object.assign({},it.ov||{}),c=cleanOv(P);
+  if(c.atks.length)o.atks=c.atks;if(c.chr!=='own')o.chr=c.chr;if(c.idle!=='own')o.idle=c.idle;
+  if(c.muz)o.muz=c.muz;if(c.at)o.at=c.at;if(c.parts.length&&!(o.parts&&o.parts.length)){o.parts=c.parts;o.rv=2}
+  if(EL[P.el])o.el=P.el;o.cool=clamp(Math.round(+P.cool||3),1,5);o.kind=passText(P.kind).slice(0,32);o.note=passText(P.note).slice(0,160);
+  const L=P.lines&&(P.lines[passLang()]||P.lines.en||P.lines.ru);
+  if(L&&typeof L==='object'){o.lines={};['start','kill','low','win'].forEach(k=>{o.lines[k]=typeof L[k]==='string'?L[k].slice(0,90):''})}
+  o.pass=1;it.ov=o;OV[it.id]=o;if(!noBuild)buildD(it);if(!quiet)saveState();
+}
+let cardDone=null;
+function showCard(it,kind,P){
+  const o=it.ov||{},pass=kind==='pass',el=EL[pass&&EL[P.el]?P.el:elOf(it)],stars=pass?clamp(Math.round(+P.cool||3),1,5):(o.cool||3);
+  $('cardCap').textContent=pass?'Настоящий паспорт героя':'Первичный осмотр';
+  $('cardImg').src=it.src;$('cardName').textContent=it.name;
+  $('cardKind').textContent=(pass?passText(P.kind)+' · ':'')+el.ico+' '+el.name;
+  $('cardStars').textContent='★'.repeat(stars)+'☆'.repeat(5-stars);
+  $('cardText').textContent=pass?passText(P.note):gal.api?'Отправь героя в галерею: там его рассмотрят как следует и выдадут настоящий паспорт.':'Стихию и крутость определили по рисунку.';
+  $('cardOk').textContent=pass?'Принять паспорт':'Понятно';
+  const fxEl=$('cardFx');fxEl.className='cardfx';void fxEl.offsetWidth;fxEl.className='cardfx go'+(pass?' big':'');$('cardBody').className='cardbody go'+(pass?' big':'');
+  $('card').hidden=false;sfx(pass?'win':'pop');
+  cardDone=pass?()=>{applyPass(it,P);renderLib();renderInfo()}:null;
+}
+$('cardOk').onclick=()=>{$('card').hidden=true;if(cardDone){const f=cardDone;cardDone=null;f()}setTimeout(passCheck,600)};
+// свои герои, отправленные в галерею, ждут паспорт: проверяем, не готов ли он
+async function passCheck(){
+  if(!gal.base||state!=='setup'||!$('card').hidden)return;
+  for(const it of library){
+    const o=it.ov;if(!it.custom||!o||!o.gid||o.pass||it._pc)continue;it._pc=1;
+    const P=await fetch(gal.base.replace(/heroes\/$/,'meta/')+o.gid+'.json').then(x=>x.ok?x.json():null).catch(()=>null);
+    if(P&&state==='setup'&&$('card').hidden){showCard(it,'pass',P);return}
+    if(P)it._pc=0;
+  }
+}
+async function galPreload(){
+  try{
+    const d=await fetch(gal.api+'/index').then(x=>x.json());
+    gal.base=String(d.base||'');gal.items=(Array.isArray(d.items)?d.items:[]).filter(i=>i&&/^[a-z0-9]{6,20}$/.test(i.id));
+    setTimeout(passCheck,1500);
+    gal.pool=[];for(const i of gal.items.slice().sort(()=>Math.random()-.5).slice(0,8)){const r=await galRec(i.id),it=r&&await galItem(i.id,r);if(it)gal.pool.push(it)}
+  }catch(err){}
+}
+
+/* ---------- путь героя: уровни за победы, соперники всё сильнее ---------- */
+const path={foeLvl:1};
+function PS(){const p=S.path||(S.path={rung:0,h:{}});p.h=p.h||{};p.rung=p.rung||0;return p}
+const pathH=id=>{const p=PS();return p.h[id]||(p.h[id]={l:1,x:0})};
+const pathNeed=l=>30+20*l;
+function pathTag(it){const b=it.pit||it,h=it.lvl?{l:it.lvl}:pathH(b.id),e=EL[elOf(it)];return e.ico+' '+e.name+' · ур. '+h.l}
+function pathItem(it,l){ // герой для пути: сила от уровня, а не от настроек песочницы
+  const slots=l>=6?3:l>=3?2:1,o=Object.assign({},it.ov||{},{pw:1+.1*(l-1),sp:1,as:1,size:1});
+  if(o.atks&&o.atks.length)o.atks=o.atks.slice(0,slots);
+  const n=Object.assign({},it,{ov:o,pit:it,lvl:l,size:1});buildD(n);n.size=1;
+  n.D.atks=n.D.atks.slice(0,slots);n.D.atk=n.D.atks[0];n.D.noSup=l<2;return n;
+}
+function pathLoad(keep){
+  const p=PS(),mine=keep&&snapshot?snapshot.filter(q=>q.team===0):[];
+  units=[];props=[];selU=selP=null;
+  mine.forEach(q=>{const b=q.item.pit||q.item,pos=fromAB(q.a,q.b);units.push(makeUnit(pathItem(b,pathH(b.id).l),pos.x,pos.y,0,1))});
+  const r=p.rung,n=r<1?1:r<3?2:3,fl=1+Math.floor(r*.7),own=library.filter(i=>!i.prop),used=new Set();path.foeLvl=fl;
+  for(let k=0;k<n;k++){
+    let it=null;for(let t=0;t<12&&(!it||used.has(it.id));t++){const src=gal.pool&&gal.pool.length&&Math.random()<.6?gal.pool:own;it=src[(Math.random()*src.length)|0]}
+    if(!it)break;used.add(it.id);
+    const pos=fromSide(1,.5+.2*(k%2),(k+1)/(n+1)),u=makeUnit(pathItem(it,Math.max(1,fl-(k?1:0))),pos.x,pos.y+base,1,1);u.locked=true;units.push(u);
+  }
+  $('fight').textContent=fightLabel();renderInfo();
+}
+function pathFinish(won){
+  const p=PS(),ids=[...new Set(snapshot.filter(q=>q.team===0).map(q=>(q.item.pit||q.item).id))],gain=won?20+8*path.foeLvl:8,ups=[];
+  ids.forEach(id=>{
+    const h=pathH(id),it=library.find(i=>i.id===id);h.x+=gain;
+    while(h.x>=pathNeed(h.l)){h.x-=pathNeed(h.l);h.l++;ups.push((it?it.name:'')+' — '+'уровень'+' '+h.l+(h.l===2?' ('+'открыт суперудар'+')':h.l===3?' ('+'вторая атака'+')':h.l===6?' ('+'третья атака'+')':''))}
+  });
+  if(won)p.rung++;
+  return{title:won?'Победа!':'Не вышло',text:'Опыт'+' +'+gain+(ups.length?' · '+ups.join(' · '):''),again:'Дальше'};
+}
