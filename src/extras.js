@@ -145,7 +145,7 @@ $('tipOk').onclick=()=>{$('tip').hidden=true;if(!S.set.tip){S.set.tip=true;saveS
 
 /* ---------- панель боя: приёмы, пауза, скорость ---------- */
 function renderBar(){
-  press('#bbar [data-v]',btool);$('spPause').setAttribute('aria-pressed',paused?'true':'false');$('spPause').textContent=paused?'Дальше':'Пауза';
+  press('#bbar [data-v]',btool);$('toolHint').textContent={blot:'Клякса: бьёт всех рядом',heal:'Ластик: лечит всех рядом',clip:'Скрепка: держит на месте'}[btool];$('spPause').setAttribute('aria-pressed',paused?'true':'false');$('spPause').textContent=paused?'Дальше':'Пауза';
   $('spFast').setAttribute('aria-pressed',speedMul>1?'true':'false');
 }
 document.querySelectorAll('#bbar [data-v]').forEach(b=>b.onclick=()=>{btool=b.dataset.v;renderBar()});
@@ -520,3 +520,9 @@ $('arenaFile').addEventListener('change',()=>{
   im.onerror=()=>{URL.revokeObjectURL(url);toast('Не получилось открыть картинку')};im.src=url;
 });
 arenaLoad();
+
+/* ---------- выбор языка ---------- */
+(function(){
+  const sel=$('mLang');I18N.langs.forEach(([code,name])=>{const o=document.createElement('option');o.value=code;o.textContent=name;sel.append(o)});sel.value=LANG;
+  sel.addEventListener('change',()=>{try{localStorage.setItem('paper-battles-lang',sel.value)}catch(e){}try{location.reload()}catch(e){}});
+})();

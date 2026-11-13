@@ -1,4 +1,15 @@
 'use strict';
+/* ---------- языки: тексты в коде русские, перевод подставляется через T() при сборке ---------- */
+const I18N=/*I18N*/;
+const LANG=(()=>{let l='';try{l=localStorage.getItem('paper-battles-lang')||''}catch(e){}if(!l)l=(navigator.language||'en').toLowerCase().split('-')[0];return I18N.t[l]||l==='ru'?l:'en'})();
+const TR=(()=>{if(LANG==='ru')return null;const m=new Map(),a=I18N.t[LANG],en=I18N.t.en||[];I18N.keys.forEach((k,i)=>m.set(k,a[i]||en[i]||k));return m})();
+function T(s){if(!TR)return s;const m=/^(\s*)([\s\S]*?)(\s*)$/.exec(s),v=TR.get(m[2]);return v===undefined?s:m[1]+v+m[3]}
+(function(){ // статическая разметка
+  document.documentElement.lang=LANG;if(!TR)return;const cyr=/[Ѐ-ӿ]/;document.title=T(document.title);
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+  nodes.forEach(n=>{if(cyr.test(n.nodeValue)&&n.parentNode.nodeName!=='SCRIPT')n.nodeValue=T(n.nodeValue)});
+  document.querySelectorAll('[title],[aria-label],[placeholder]').forEach(el=>['title','aria-label','placeholder'].forEach(a=>{const v=el.getAttribute(a);if(v&&cyr.test(v))el.setAttribute(a,T(v))}));
+})();
 const PENCIL='#2a2a33',BLUE='#2c6bd8',RED='#e2463a',MARKER='#ffd43b';
 const TEAM_COL=[BLUE,RED],TEAM_NAME=['Синие','Красные'];
 const $=id=>document.getElementById(id);
