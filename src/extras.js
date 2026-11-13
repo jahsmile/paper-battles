@@ -526,3 +526,75 @@ arenaLoad();
   const sel=$('mLang');I18N.langs.forEach(([code,name])=>{const o=document.createElement('option');o.value=code;o.textContent=name;sel.append(o)});sel.value=LANG;
   sel.addEventListener('change',()=>{try{localStorage.setItem('paper-battles-lang',sel.value)}catch(e){}try{location.reload()}catch(e){}});
 })();
+
+/* ---------- общая галерея героев: читаем из GitHub, пишем через свой сервер ---------- */
+const gal={api:'',base:'',items:[],recs:new Map(),shown:0,busy:false};
+fetch('gallery.json').then(r=>r.ok?r.json():null).then(c=>{
+  if(c&&typeof c.api==='string'&&/^https?:\/\//.test(c.api)){gal.api=c.api.replace(/\/+$/,'');$('mGalBox').hidden=false}
+}).catch(()=>{});
+const galOk=r=>r&&typeof r.src==='string'&&r.src.indexOf('data:image/')===0&&r.src.length<=240000&&has(ARCH,r.role);
+async function galRec(id){
+  if(gal.recs.has(id))return gal.recs.get(id);
+  const r=await fetch(gal.base+id+'.json').then(x=>x.ok?x.json():null).catch(()=>null),v=galOk(r)?r:null;
+  gal.recs.set(id,v);return v;
+}
+function galItem(id,r){ // гость: герой из галереи, которого нет в наборе
+  return new Promise(res=>{const im=new Image();im.onerror=()=>res(null);im.onload=()=>{
+    const n={id:'g-'+id,name0:String(r.name||'Герой').slice(0,14),role:r.role,src:r.src,face:r.face===1||r.face===-1?r.face:0,base:customD(r.role,im),custom:true,guest:true,size:1,ov:cleanOv(r.ov)};
+    buildD(n);res(n)};im.src=r.src});
+}
+function galTake(id,r){
+  const nid='c-'+Date.now(),name=String(r.name||'Герой').slice(0,14);OV[nid]=cleanOv(r.ov);
+  addCustomRec({id:nid,name,role:r.role,face:r.face===1||r.face===-1?r.face:0,src:r.src,raw:'',mask:'',tol:34});
+  saveState();setTimeout(()=>{saveCustom();if(cloud.db)cloudMark('h:'+nid)},700);toast('Герой «'+name+'» добавлен в набор');
+}
+async function galMore(){
+  if(gal.busy)return;gal.busy=true;
+  const part=gal.items.slice(gal.shown,gal.shown+12);gal.shown+=part.length;
+  const recs=await Promise.all(part.map(i=>galRec(i.id)));
+  part.forEach((i,k)=>{const r=recs[k];if(!r)return;
+    const c=document.createElement('div');c.className='gcard';
+    const im=document.createElement('img');im.src=r.src;im.alt='';
+    const s=document.createElement('span');s.textContent=String(r.name||'Герой').slice(0,14);
+    const sm=document.createElement('small');sm.textContent=ARCH[r.role].name;
+    const b=document.createElement('button');b.type='button';b.className='btn light';b.textContent='Взять';b.onclick=()=>{galTake(i.id,r);b.disabled=true};
+    c.append(im,s,sm,b);$('galList').append(c)});
+  $('galMore').hidden=gal.shown>=gal.items.length;$('galNote').textContent=gal.items.length?'':'В галерее пока пусто';gal.busy=false;
+}
+$('mGal').onclick=async()=>{
+  $('menu').hidden=true;$('gal').hidden=false;$('galList').textContent='';$('galMore').hidden=true;$('galNote').textContent='Загрузка…';gal.shown=0;
+  try{
+    const d=await fetch(gal.api+'/index').then(x=>x.json());
+    gal.base=String(d.base||'');gal.items=(Array.isArray(d.items)?d.items:[]).filter(i=>i&&/^[a-z0-9]{6,20}$/.test(i.id));
+    await galMore();
+  }catch(err){$('galNote').textContent='Галерея не открылась: нет связи'}
+};
+$('galMore').onclick=galMore;$('galClose').onclick=()=>{$('gal').hidden=true};
+$('galFoes').onclick=async()=>{
+  if(state!=='setup'){toast('Сначала закончи бой');return}
+  if(S.set.mode!=='free'){toast('Соперники из галереи доступны в свободном бою');return}
+  if(!gal.items.length){toast('В галерее пока пусто');return}
+  const mine=units.filter(u=>u.team===0),n=clamp(mine.length||3,1,6),pool=gal.items.slice().sort(()=>Math.random()-.5),got=[];
+  $('galNote').textContent='Загрузка…';
+  for(const i of pool){if(got.length>=n)break;const r=await galRec(i.id),it=r&&await galItem(i.id,r);if(it)got.push(it)}
+  $('galNote').textContent='';
+  if(!got.length){toast('Галерея не открылась: нет связи');return}
+  const pb=teamPower()[0]||got.length*25,sum=got.reduce((a,it)=>a+power(it.D,1),0),sz=clamp(Math.round(Math.pow(pb/sum,1/1.75)*10)/10,.5,3);
+  units=units.filter(u=>u.team!==1);
+  got.forEach((it,k)=>{const p=fromSide(1,.45+.25*(k%2),(k+1)/(got.length+1));units.push(makeUnit(it,p.x,p.y,1,sz))});
+  $('gal').hidden=true;selU=null;renderInfo();sfx('pop',.03);
+};
+let pubIt=null;
+$('edPub').onclick=()=>{if(edIt&&edIt.custom&&gal.api){commitEd();pubIt=edIt;$('pub').hidden=false}};
+$('pubNo').onclick=()=>{$('pub').hidden=true};
+$('pubOk').onclick=async()=>{
+  const it=pubIt;$('pub').hidden=true;if(!it)return;
+  const body=JSON.stringify({v:1,name:it.name,role:it.role,face:it.face||0,src:it.src,ov:cleanOv(it.ov)});
+  if(body.length>240000){toast('Рисунок слишком большой, чтобы им поделиться');return}
+  try{
+    const x=await fetch(gal.api+'/hero',{method:'POST',headers:{'content-type':'text/plain'},body});
+    if(x.status===429){toast('Слишком много отправок. Попробуй позже');return}
+    if(!x.ok)throw 0;
+    toast('Герой отправлен в галерею');
+  }catch(err){toast('Не получилось отправить: нет связи')}
+};

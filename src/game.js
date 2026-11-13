@@ -1437,7 +1437,7 @@ function renderEd(){
   $('edPwVal').textContent='×'+(+edOv.pw).toFixed(1)+' · сила '+power(D,1);$('edSpVal').textContent='×'+(+edOv.sp).toFixed(1);$('edAsVal').textContent='×'+(+edOv.as).toFixed(1);$('edSzVal').textContent='×'+(+edOv.size).toFixed(1)+' · сила на листе '+power(D,edOv.size);
   const sv=S.stats[edIt.id];
   $('edDesc').textContent=D.tag[0].toUpperCase()+D.tag.slice(1)+'. '+D.desc+' Суперудар: '+SUPER[superKind(D)].toLowerCase()+'.'+(sv&&sv.b?' Боёв: '+sv.b+', побед: '+sv.w+', повержено врагов: '+sv.k+'.':'');
-  $('edRecut').hidden=!(edIt.custom&&edIt.raw);renderSnd();$('edShare').hidden=!edIt.custom;
+  $('edRecut').hidden=!(edIt.custom&&edIt.raw);renderSnd();$('edShare').hidden=!edIt.custom;$('edPub').hidden=!(edIt.custom&&!edIt.guest&&typeof gal!=='undefined'&&gal.api);
 }
 function edChanged(){commitEd();renderEd();pvStart()}
 $('edPw').addEventListener('input',()=>{edOv.pw=+$('edPw').value;commitEd();renderEd()});
