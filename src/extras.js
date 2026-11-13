@@ -212,8 +212,8 @@ $('edShare').onclick=async()=>{
   const it=edIt;if(!it||!it.custom)return;
   if(!cloud.db){toast('Поделиться можно, когда игра открыта в аккаунте Claude');return}
   commitEd();
-  const r={v:1,name:it.name,role:it.role,face:it.face||0,src:it.src,ov:cleanOv(it.ov)};
-  if(JSON.stringify(r).length>240000){toast('Рисунок слишком большой, чтобы им поделиться');return}
+  const r={v:1,name:it.name,role:it.role,face:it.face||0,src:await fitSrc(it.src,200000),ov:cleanOv(it.ov)};
+  if(!r.src||JSON.stringify(r).length>240000){toast('Рисунок слишком большой, чтобы им поделиться');return}
   try{
     let code='';
     for(let n=0;n<5;n++){code=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[(Math.random()*32)|0]).join('');const sn=await cloud.db.doc('shared/'+code).get();if(!sn.exists)break}
@@ -584,13 +584,21 @@ $('galFoes').onclick=async()=>{
   got.forEach((it,k)=>{const p=fromSide(1,.45+.25*(k%2),(k+1)/(got.length+1));units.push(makeUnit(it,p.x,p.y,1,sz))});
   $('gal').hidden=true;selU=null;renderInfo();sfx('pop',.03);
 };
+// уменьшаем рисунок, пока он не влезет в лимит: телефоны без webp отдают тяжёлый png
+function fitSrc(src,lim){
+  return new Promise(res=>{if(src.length<=lim)return res(src);const im=new Image();im.onerror=()=>res('');im.onload=()=>{
+    for(const m of [520,420,340,270,210,160]){const k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      let s=c.toDataURL('image/webp',.82);if(s.length>lim)s=c.toDataURL('image/png');if(s.length<=lim)return res(s)}
+    res('')};im.src=src});
+}
 let pubIt=null;
 $('edPub').onclick=()=>{if(edIt&&edIt.custom&&gal.api){commitEd();pubIt=edIt;$('pub').hidden=false}};
 $('pubNo').onclick=()=>{$('pub').hidden=true};
 $('pubOk').onclick=async()=>{
   const it=pubIt;$('pub').hidden=true;if(!it)return;
-  const body=JSON.stringify({v:1,name:it.name,role:it.role,face:it.face||0,src:it.src,ov:cleanOv(it.ov)});
-  if(body.length>240000){toast('Рисунок слишком большой, чтобы им поделиться');return}
+  const src=await fitSrc(it.src,200000),body=JSON.stringify({v:1,name:it.name,role:it.role,face:it.face||0,src,ov:cleanOv(it.ov)});
+  if(!src||body.length>240000){toast('Рисунок слишком большой, чтобы им поделиться');return}
   try{
     const x=await fetch(gal.api+'/hero',{method:'POST',headers:{'content-type':'text/plain'},body});
     if(x.status===429){toast('Слишком много отправок. Попробуй позже');return}
