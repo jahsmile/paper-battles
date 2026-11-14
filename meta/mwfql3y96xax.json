@@ -1,0 +1,32 @@
+{
+ "v": 1,
+ "el": "steel",
+ "cool": 4,
+ "kind": {
+  "ru": "Четырёхглазый болотник",
+  "en": "Four-eyed swamp monster"
+ },
+ "note": {
+  "ru": "Четыре жёлтых глаза, огромная чёрная пасть и длинные руки с растопыренными пальцами. Хватает когтями и плюётся из пасти.",
+  "en": "Four yellow eyes, a huge black mouth and long arms with spread fingers. Grabs with claws and spits from its mouth."
+ },
+ "chr": "scary",
+ "atks": [
+  "claw",
+  "plasma"
+ ],
+ "lines": {
+  "ru": {
+   "start": "Я вижу тебя во все четыре глаза!/Бу-у-у!",
+   "kill": "Ам!/Следующий!",
+   "low": "Ой, мои глазки…/Я ещё вернусь!",
+   "win": "Болото победило!/Бу-га-га!"
+  },
+  "en": {
+   "start": "I see you with all four eyes!/Boo!",
+   "kill": "Chomp!/Next!",
+   "low": "Ow, my eyes…/I'll be back!",
+   "win": "The swamp wins!/Boo-ha-ha!"
+  }
+ }
+}
