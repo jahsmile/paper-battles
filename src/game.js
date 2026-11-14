@@ -41,6 +41,8 @@ const CH={
     rig:[{poly:[[.135,.06],[.215,0],[.33,0],[.33,.25],[.215,.25],[.215,.15],[.135,.15]],pv:[.27,.25],anim:'hop'},{poly:[[.66,.17],[.845,.15],[.845,.29],[.66,.28]],pv:[.67,.23],anim:'recoil'}],lines:L(['ОГОНЬ ИЗ ВСЕХ ОРУДИЙ!'],['Следующий!'],['Броня трещит!'],['Крепость стоит!'])},
   dino:{name:'Динотанк',tag:'весёлый непоседа',desc:'Скачет и строчит очередями. Кто подойдёт близко, получит хвостом.',H:2.9,hp:210,speed:2.4,pw:21,idle:'hop',
     atk:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09},melee:{cd:2.4,dmg:20,fx:'tail',part:'tail',aoe:1.4,push:1.6},muz:[[.82,.11]],lines:L(['Тра-та-та!'],['Ура!'],['Ой-ой!'],['Я самый быстрый!'])},
+  duo:{name:'Двупушка',tag:'ворчун с двумя пушками',desc:'Верхняя пушка по очереди бьёт огнём, льдом, ядом и ядерным зарядом. Нижняя строчит пулями.',H:3.1,hp:300,speed:1.2,pw:30,veh:1,idle:'rumble',
+    atk:{k:'shell',range:7.5,cd:2.4,dmg:26,blast:1.4,ammo:['fire','ice','poison','nuke'],mi:0},far:{k:'burst',range:6.5,cd:1.5,dmg:8,n:4,gap:.09,mi:1},muz:[[.88,.21],[.985,.555]],lines:L(['Сейчас как бахну!'],['Готов!'],['Эй, полегче!'],['Обе пушки молодцы.'])},
   saw:{name:'Пила',tag:'упрямый силач',desc:'Идёт напролом и пилит всё подряд, по пути постреливает с плеча. Броня гасит часть урона.',H:3.7,hp:430,speed:1.25,pw:30,armor:.7,idle:'breathe',
     atk:{k:'saw',cd:.14,dmg:7,at:[.115,.83]},far:{k:'burst',range:6,cd:1.7,dmg:12,n:1},muz:[[.97,.2]],lines:L(['ВЖЖЖЖ!'],['Распилил!'],['Не отступлю!'],['Вжик, и готово.'])},
   black:{name:'Чёрный',tag:'злой и вспыльчивый',desc:'Стреляет огненными снарядами, после них горит земля. Когда ранен, звереет и палит почти вдвое чаще.',H:2.4,hp:215,speed:1.3,pw:27,veh:1,idle:'angry',enrage:1,
@@ -62,6 +64,8 @@ const RIGS={
   blade:[RG('barrel','recoil','back',[.66,.33],[[.66,.2],[1,.16],[1,.5],[.66,.45]])],
   witch:[RG('armL','swing','front',[.2,.34],[[.08,.3],[.25,.3],[.235,.5],[.21,.98],[0,.98],[0,.45]]),RG('armR','swing','front',[.63,.31],[[.58,.26],[.76,.3],[.96,.7],[1,.76],[1,.9],[.75,.9],[.73,.6],[.67,.42]])],
   fort:[RG('crown','hop','front',[.27,.25],[[.135,.06],[.215,0],[.33,0],[.33,.25],[.215,.25],[.215,.15],[.135,.15]]),RG('gun','recoil','back',[.67,.23],[[.66,.17],[.845,.15],[.845,.29],[.66,.28]])],
+  duo:[RG('top','hop','front',[.15,.38],[[.07,.02],[.7,.02],[.78,0],[.9,.1],[.9,.32],[.8,.39],[.74,.38],[.74,.49],[.22,.49],[.2,.38],[.14,.38]]),RG('gun','recoil','front',[.72,.55],[[.72,.49],[1,.5],[1,.61],[.72,.6]]),
+    RG('clawL','swing','back',[.13,.6],[[0,.56],[.13,.56],[.15,.66],[.1,.96],[.02,.96]],-25,25),RG('clawR','swing','front',[.84,.68],[[.83,.63],[1,.66],[1,1],[.9,1],[.8,.73]],-25,25)],
   dino:[RG('tail','wag','back',[.37,.52],[[0,0],[.12,0],[.4,.42],[.39,.62],[.3,.6],[0,.2]],-86,86),RG('turret','recoil','front',[.55,.25],[[.4,0],[.84,0],[.84,.22],[.68,.275],[.4,.275]])],
   saw:[RG('disc','spin','front',[.115,.832],Array.from({length:16},(q,i)=>[Math.max(0,.115+Math.cos(i/16*6.2832)*.118),.832+Math.sin(i/16*6.2832)*.0854]))],
   black:[RG('barrel','recoil','back',[.63,.17],[[.625,.07],[.93,.04],[.93,.29],[.625,.27]])],
@@ -72,7 +76,7 @@ const RIGS={
   king:[RG('barrel','recoil','back',[.7,.33],[[.7,.23],[.89,.23],[.89,.43],[.7,.43]]),RG('crown','hop','front',[.585,.17],[[.455,0],[.715,0],[.715,.175],[.455,.175]])]
 };
 Object.keys(RIGS).forEach(k=>{CH[k].rig=RIGS[k]});
-const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch'];
+const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo'];
 // роли для своих рисунков
 const ARCH={
   fighter:{name:'Боец',desc:'дерётся вблизи',hp:130,speed:2.3,pw:12,idle:'breathe',atk:{k:'melee',cd:.8,dmg:18,fx:'punch'}},
@@ -95,6 +99,7 @@ const ATK={
   burst:{name:'Очередь',a:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09}},
   shell:{name:'Снаряды',a:{k:'shell',range:8.5,cd:2.2,dmg:40,blast:1.6}},
   ice:{name:'Лёд',a:{k:'shell',range:9,cd:2.6,dmg:45,blast:1.4,freeze:2.6,col:'#3aa0e8'}},
+  multi:{name:'Мультипушка',a:{k:'shell',range:7.5,cd:2.4,dmg:26,blast:1.4,ammo:['fire','ice','poison','nuke']}},
   napalm:{name:'Напалм',a:{k:'shell',range:7.5,cd:2,dmg:32,blast:1.5,burn:3,col:'#ff5a1f'}},
   rocket:{name:'Ракеты',a:{k:'rocket',range:8,cd:2.4,dmg:24,blast:1.2,n:2,gap:.22}},
   plasma:{name:'Плазма',a:{k:'burst',range:5.5,cd:1.3,dmg:14,n:2,gap:.15,plasma:1,blast:.7,col:'#b63ad6'}},
@@ -571,12 +576,19 @@ function fireSuper(u){
   }
   return true;
 }
+const AMMO={fire:{burn:3,col:'#ff5a1f'},ice:{freeze:3,col:'#8fd3ff'},poison:{poison:5,col:'#4caf2a',dk:.7},nuke:{nuke:1,col:'#ffe24a',dk:1.7,bk:2.1}};
 function explode(x,y,rad,dmg,team,o={}){
-  units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze}});
-  fx.push({k:'boom',x,y,t:0,life:.35,r:rad,col:o.freeze?'#8fd3ff':o.plasma?'#b63ad6':'#ff8a1f',col2:o.freeze?'#ffffff':o.plasma?'#f0b8ff':MARKER});
+  units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze;if(o.poison&&!q.dead){q.poisT=o.poison;q.poisD=dmg*.22;q.poisBy=o.by}}});
+  fx.push({k:'boom',x,y,t:0,life:o.nuke?.6:.35,r:rad,col:o.freeze?'#8fd3ff':o.plasma?'#b63ad6':o.poison?'#6bd13a':o.nuke?'#ffe24a':'#ff8a1f',col2:o.freeze?'#ffffff':o.plasma?'#f0b8ff':o.poison?'#d8ffb0':o.nuke?'#ffffff':MARKER});
+  if(o.nuke){ // гриб: столб дыма вверх и шапка
+    shake=Math.max(shake,12);sfx('boom');word('БА-БАХ!',x,y-rad,1.6);fx.push({k:'ring',x,y:y+base*.3,t:0,life:.6,r:rad*1.6});
+    for(let i=0;i<14;i++)smoke(x+rnd(-.2,.2)*rad,y-i*rad*.09,rnd(-.4,.4)*base,-base*rnd(2.5,5),base*rnd(.5,.9),'rgba(90,90,100,.55)');
+    for(let i=0;i<10;i++){const a=Math.random()*6.283;smoke(x+Math.cos(a)*rad*.5,y-rad*1.2+Math.sin(a)*rad*.2,Math.cos(a)*base*1.4,-base*rnd(.6,1.4),base*rnd(.6,1),'rgba(255,190,90,.5)')}
+  }
+  if(o.poison)for(let i=0;i<8;i++){const a=Math.random()*6.283;smoke(x+Math.cos(a)*rad*.6,y+Math.sin(a)*rad*.3,Math.cos(a)*base*.6,-base*rnd(.3,1),base*rnd(.3,.6),'rgba(90,190,60,.5)')}
   for(let i=0;i<(o.small?2:5);i++){const a=Math.random()*6.283;smoke(x,y,Math.cos(a)*base*1.5,Math.sin(a)*base-base*1.2,base*rnd(.25,.5))}
   if(!o.small)fx.push({k:'wave',x,y:y+base*.3,r:rad*1.5,t:0,life:.35});
-  if(!o.small)stains.push({x,y:y+base*.3,r:rad*.4,seed:(Math.random()*1e9)|0,t:0,col:o.freeze?'120,190,240':'40,40,46',a:o.freeze?.45:.78});
+  if(!o.small)stains.push({x,y:y+base*.3,r:rad*.4,seed:(Math.random()*1e9)|0,t:0,col:o.freeze?'120,190,240':o.poison?'90,170,60':'40,40,46',a:o.freeze||o.poison?.45:.78});
   if(o.burn)zones.push({x,y:y+base*.3,r:rad*.9,t:0,life:o.burn,dps:dmg*.4,team,tick:0});
   if(o.freeze){for(let i=0;i<7;i++)fx.push({k:'snow',x:x+rnd(-1,1)*rad,y:y+rnd(-1,.3)*rad,vx:0,vy:base*1.2,t:0,life:rnd(.5,1)});sfx('freeze')}
   if(!o.small&&Math.random()<.5)word(o.freeze?'ДЗЫНЬ!':'БАХ!',x,y-rad,1.1);
@@ -659,11 +671,13 @@ function fire(u,t,A,foes,key){
   const list=A.multi?foes.slice().sort((a,b)=>Math.hypot(a.x-u.x,a.y-u.y)-Math.hypot(b.x-u.x,b.y-u.y)):null;
   for(let i=0;i<n;i++)at(u,i*gap,()=>{
     let tg=list?list[i%list.length]:t;if(tg.dead){tg=foesOf(u)[0];if(!tg)return}
-    const m=mz(u,i),tx=tg.x,ty=tg.y-tg.h*.35,a=Math.atan2(ty-m.y,tx-m.x);
+    const m=mz(u,A.mi!=null?A.mi:i),tx=tg.x,ty=tg.y-tg.h*.35,a=Math.atan2(ty-m.y,tx-m.x);
     u.an={k:'shoot',t:.3,d:.3};
     if(A.k==='shell'){
-      shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg(),blast:A.blast*base*u.bl,team:u.team,freeze:A.freeze,burn:A.burn,col:A.col,by:u,sm:0,sz:u.bl});
-      fx.push({k:'flash',x:m.x,y:m.y,t:0,life:.14,rot:a,s:u.bl,col:A.col});
+      // пушка с разными зарядами: огонь, лёд, яд, ядерный — по очереди
+      const am=A.ammo?AMMO[A.ammo[u.ammoI=((u.ammoI==null?-1:u.ammoI)+1)%A.ammo.length]]:A,col=am.col||A.col;
+      shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg()*(am.dk||1),blast:A.blast*base*u.bl*(am.bk||1),team:u.team,freeze:am.freeze,burn:am.burn,poison:am.poison,nuke:am.nuke,col,by:u,sm:0,sz:u.bl*(am.nuke?1.5:1)});
+      fx.push({k:'flash',x:m.x,y:m.y,t:0,life:.14,rot:a,s:u.bl,col});
       for(let j=0;j<4;j++)smoke(m.x,m.y,Math.cos(a)*base*rnd(1,3.5),Math.sin(a)*base*2-base*rnd(.4,1.4),base*rnd(.25,.5)*u.bl);
       sfx('cannon',.04);shake=Math.max(shake,2+u.s);
     }else if(A.k==='rocket'){
@@ -732,6 +746,7 @@ function update(dt){
       }
       if(u.liftT>0)continue;
     }
+    if(u.poisT>0){u.poisT-=dt;u.poisA=(u.poisA||0)+dt;if(u.poisA>=.5){u.poisA=0;hurt(u,u.poisD*.5,u.x,u.y,0,true,u.poisBy&&!u.poisBy.dead?u.poisBy:null);smoke(u.x+rnd(-.4,.4)*u.r,u.y-u.h*rnd(.3,.9),0,-base*.8,base*.22,'rgba(90,190,60,.6)');if(u.dead)continue}}
     u.glueT-=dt;if(u.holdT>0){u.holdT-=dt;continue}
     if(!u.saidLow&&hpR<.35){u.saidLow=true;say(u,'low')}
     if(u.fearT>0){u.fearT-=dt;const dx=u.x-u.fx,dy=u.y-u.fy,d=Math.hypot(dx,dy)||1;step(u,dx,dy,d,1.3,dt);u.face=dx>0?1:-1;continue}

@@ -614,7 +614,7 @@ $('pubOk').onclick=async()=>{
 /* ---------- стихии, первичный осмотр рисунка на устройстве, паспорт героя ---------- */
 const EL={fire:{name:'Огонь',ico:'🔥'},ice:{name:'Лёд',ico:'❄️'},steel:{name:'Сталь',ico:'🛡️'}};
 const BEATS={fire:'ice',ice:'steel',steel:'fire'};
-const EL0={king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
+const EL0={duo:'steel',king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
 function elOf(it){const o=it.ov;if(o&&EL[o.el])return o.el;const b=it.pit||it;return EL0[String(b.id).slice(2)]||b._el||(b._el=b.D&&b.D.img?scanImg(b.D.img).el:'steel')}
 // первичный осмотр: стихия по цвету, «крутость» по числу деталей и красок
 function scanImg(img){
@@ -682,7 +682,7 @@ async function galPreload(){
 
 /* ---------- путь героя: башня, свои герои, инкубатор, миссии ---------- */
 const path={foeLvl:1,tab:'tower'};
-const STARTERS=['d-king','d-dino','d-golem'],GIFTS=['d-blade','d-teeth','d-witch','d-black','d-rider','d-purple','d-saw','d-fort'];
+const STARTERS=['d-king','d-dino','d-golem'],GIFTS=['d-duo','d-blade','d-teeth','d-witch','d-black','d-rider','d-purple','d-saw','d-fort'];
 const REWARD={2:'hero',3:'egg',5:'hero',7:'egg',9:'hero',12:'egg',15:'crown'},TOP=15; // что дают за этаж
 function PS(){const p=S.path||(S.path={});p.h=p.h||{};p.rung=p.rung||0;p.own=p.own||[];p.wins=p.wins||0;p.ms=p.ms||{set:0,w:0,f:0,k:0,got:[0,0,0]};return p}
 const pathH=id=>{const p=PS();return p.h[id]||(p.h[id]={l:1,x:0})};
