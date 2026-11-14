@@ -50,7 +50,7 @@ const CH={
   rider:{name:'Всадник',tag:'отважный наездник',desc:'С разгона таранит самого большого врага, потом палит из пушки в упор.',H:3.0,hp:300,speed:2.7,pw:19,idle:'hop',pick:'big',charge:{cd:5,min:2.5,max:7.5,dmg:45,push:2.2},
     atk:{k:'shell',range:5,cd:1.8,dmg:22,blast:1},muz:[[.95,.6]],lines:L(['В атаку!'],['Так его!'],['Держись, дружок!'],['Победа!'])},
   golem:{name:'Голем',tag:'молчаливый великан',desc:'Жжёт лазером из глаз, а вблизи бьёт кулаком так, что враги улетают.',H:3.9,hp:520,speed:1,pw:30,heavy:1,idle:'still',
-    atk:{k:'laser',range:6,cd:.1,dmg:3,col:'#ff2a2a'},melee:{cd:1.6,dmg:60,fx:'punch',part:'armR',push:2.4},muz:[[.37,.085]],lines:L(['…'],['…'],['…!'],['.'])},
+    atk:{k:'laser',range:6,cd:.1,dmg:3,col:'#ff2a2a'},melee:{cd:1.9,dmg:44,fx:'slam',part:'armR',aoe:1.5,push:1.6},muz:[[.37,.085]],lines:L(['…'],['…'],['…!'],['.'])},
   purple:{name:'Фиолет',tag:'бешеный берсерк',desc:'Палит плазмой и рвёт когтями. Чем меньше у него здоровья, тем он быстрее.',H:3.3,hp:280,speed:2,pw:26,idle:'twitch',berserk:1,
     atk:{k:'burst',range:5.5,cd:1.3,dmg:14,n:2,gap:.15,plasma:1,blast:.7,col:'#b63ad6'},melee:{cd:.5,dmg:19,fx:'claw',part:'claw'},muz:[[.99,.36]],lines:L(['РРРА!'],['ЕЩЁ!'],['А-А-А!!!'],['РРРА-ХА-ХА!'])},
   king:{name:'Король',tag:'гордый командир',desc:'Копит заряд и бьёт лучом сквозь всех врагов. Рядом с ним свои дерутся сильнее.',H:2.7,hp:430,speed:1,pw:24,veh:1,idle:'proud',aura:4,
@@ -90,6 +90,7 @@ const ATK={
   punch:{name:'Кулаки',a:{k:'melee',cd:.8,dmg:24,fx:'punch'}},
   claw:{name:'Когти',a:{k:'melee',cd:.45,dmg:15,fx:'claw'}},
   grab:{name:'Захват',a:{k:'melee',cd:2.8,dmg:40,fx:'grab'}},
+  slam:{name:'Удар о землю',a:{k:'melee',cd:1.9,dmg:38,fx:'slam',aoe:1.5,push:1.4}},
   saw:{name:'Пила',a:{k:'saw',cd:.14,dmg:7}},
   burst:{name:'Очередь',a:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09}},
   shell:{name:'Снаряды',a:{k:'shell',range:8.5,cd:2.2,dmg:40,blast:1.6}},
@@ -609,16 +610,21 @@ const liftUp=u=>{const k=clamp((u.liftD-u.liftT)/.35,0,1);return k*k*(3-2*k)};
 const liftDown=u=>{const k=clamp(1-u.liftT/.16,0,1);return k*k};
 function melee(u,t,M,foes,reach,prim){
   u.cds[prim]=M.cd;heroSnd(u);
-  const d=Math.min(M.cd*.9,.38),part=M.parts?M.parts[u.alt=(u.alt+1)%M.parts.length]:M.part;
+  const d=Math.min(M.cd*.9,M.fx==='slam'?.6:.38),part=M.parts?M.parts[u.alt=(u.alt+1)%M.parts.length]:M.part;
   const dx=t.x-u.x,dy=t.y-u.y,l=Math.hypot(dx,dy)||1;
-  u.an={k:'melee',t:d,d,part,ax:dx/l,ay:dy/l,big:M.fx==='bite'};
+  u.an={k:'melee',t:d,d,part,ax:dx/l,ay:dy/l,big:M.fx==='bite'||M.fx==='slam'};
   if(M.fx==='punch'&&!u.D.parts.some(P=>P.anim==='swing'))fx.push({k:'fist',x:u.x+dx/l*u.r*.5,y:u.y-u.h*.5,x2:t.x-dx/l*t.r*.4,y2:t.y-t.h*.5,t:0,life:d*.55,s:clamp(u.h*.13,base*.3,base*1.2)});
   if(M.fx==='tail')sfx('whoosh');
-  at(u,d*.5,()=>{
+  at(u,d*(M.fx==='slam'?.62:.5),()=>{
     const dmg=M.dmg*u.dm*u.buff,hit=o=>hurt(o,dmg,u.x,u.y,M.push||.3,false,u);
-    if(M.aoe){foes.forEach(o=>{if(!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<reach+M.aoe*base)hit(o)});fx.push({k:'arc',x:u.x,y:u.y-u.h*.4,r:u.r+M.aoe*base,t:0,life:.25});word('ХЛЫСЬ!',u.x,u.y-u.h,1.1);return}
+    if(M.aoe){foes.forEach(o=>{if(!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<reach+M.aoe*base)hit(o)});if(M.fx==='slam'){ // кулаком о землю: волна по листу, пыль и клочки
+        const gx=u.x+dx/l*u.r*.8,gy=u.y+dy/l*u.r*.3,R=reach+M.aoe*base;
+        fx.push({k:'ring',x:gx,y:gy,t:0,life:.45,r:R});fx.push({k:'star',x:gx,y:gy-base*.3,t:0,life:.3,rot:Math.random()*6});
+        for(let j=0;j<7;j++)smoke(gx+rnd(-1,1)*R*.4,gy,rnd(-1,1)*base*1.5,-base*rnd(.4,1.4),base*rnd(.3,.7),'rgba(120,120,130,.5)');
+        scraps(gx,gy,8,0);sfx('thud');word('БДЫЩ!',gx,gy-u.h*.5,1.4);return}
+      fx.push({k:'arc',x:u.x,y:u.y-u.h*.4,r:u.r+M.aoe*base,t:0,life:.25});word('ХЛЫСЬ!',u.x,u.y-u.h,1.1);return}
     if(t.dead||Math.hypot(t.x-u.x,t.y-u.y)>reach*1.6)return;
-    if(M.fx==='grab'&&!t.D.heavy&&!(t.liftT>0)&&!(u.liftT>0)){ // хватает врага, поднимает над головой и швыряет об лист
+    if(M.fx==='grab'&&!(t.liftT>0)&&!(u.liftT>0)){ // хватает врага, поднимает над головой и швыряет об лист
       const T2=1.15;t.liftT=u.liftT=t.liftD=u.liftD=T2;t.liftV=true;t.liftBy=u;t.liftDmg=dmg;t.lx0=t.x;t.ly0=t.y;u.liftV=false;t.dash=0;u.dash=0;u.face=t.x>=u.x?1:-1;sfx('whoosh');word('ХВАТЬ!',u.x,u.y-u.h*1.1,1.1);return;
     }
     hit(t);const cx=t.x,cy=t.y-t.h*.5;
@@ -927,7 +933,7 @@ function drawUnit(u,t){
     }
     if(u.walking&&D.idle!=='stomp'&&D.idle!=='float'){if(D.veh)oy+=Math.sin(t*45+ph)*.7;else{oy-=Math.abs(Math.sin(t*9+ph))*u.h*.045;rot+=Math.sin(t*9+ph)*.05}}
     if(u.dash>0)rot+=.14;
-    if(u.liftT>0){const k=liftUp(u),k2=liftDown(u);if(u.liftV&&u.liftBy){oy-=u.liftBy.h*.95*k*(1-k2);rot+=Math.sin(t*22+ph)*.1*k+k2*1.2*u.liftBy.face*u.face}else{sy*=1+.07*k*(1-k2)-.1*k2;rot+=Math.sin(t*14)*.025*k}}
+    if(u.liftT>0){const k=liftUp(u),k2=liftDown(u);if(u.liftV&&u.liftBy){const hold=k*(1-k2),sg=u.liftBy.face;oy-=(u.liftBy.h*.95+u.w*.45)*hold;ox-=sg*u.face*u.h*.5*hold;rot+=sg*(1.5708*k+k2*.6)+Math.sin(t*22+ph)*.07*k}else{sy*=1+.07*k*(1-k2)-.1*k2;rot+=Math.sin(t*14)*.025*k}}
     if(u.sawT>0){ox+=(Math.random()-.5)*2;rot+=.05}
     if(state==='over')oy-=Math.abs(Math.sin(t*7+ph))*u.h*.12;
     if(an){
