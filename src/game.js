@@ -604,6 +604,9 @@ function choose(u,foes){
   for(const o of foes){let v=Math.hypot(o.x-u.x,o.y-u.y);if(m==='big')v-=o.max*base*.02;else if(m==='weak')v+=o.hp*base*.02;if(v<bv){bv=v;best=o}}
   return best;
 }
+// захват: 0→1 пока поднимает, и 0→1 в самом конце, когда швыряет вниз
+const liftUp=u=>{const k=clamp((u.liftD-u.liftT)/.35,0,1);return k*k*(3-2*k)};
+const liftDown=u=>{const k=clamp(1-u.liftT/.16,0,1);return k*k};
 function melee(u,t,M,foes,reach,prim){
   u.cds[prim]=M.cd;heroSnd(u);
   const d=Math.min(M.cd*.9,.38),part=M.parts?M.parts[u.alt=(u.alt+1)%M.parts.length]:M.part;
@@ -616,7 +619,7 @@ function melee(u,t,M,foes,reach,prim){
     if(M.aoe){foes.forEach(o=>{if(!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<reach+M.aoe*base)hit(o)});fx.push({k:'arc',x:u.x,y:u.y-u.h*.4,r:u.r+M.aoe*base,t:0,life:.25});word('ХЛЫСЬ!',u.x,u.y-u.h,1.1);return}
     if(t.dead||Math.hypot(t.x-u.x,t.y-u.y)>reach*1.6)return;
     if(M.fx==='grab'&&!t.D.heavy&&!(t.liftT>0)&&!(u.liftT>0)){ // хватает врага, поднимает над головой и швыряет об лист
-      const T2=1.15;t.liftT=u.liftT=t.liftD=u.liftD=T2;t.liftV=true;t.liftBy=u;t.liftDmg=dmg;u.liftV=false;t.dash=0;sfx('whoosh');word('ХВАТЬ!',u.x,u.y-u.h*1.1,1.1);return;
+      const T2=1.15;t.liftT=u.liftT=t.liftD=u.liftD=T2;t.liftV=true;t.liftBy=u;t.liftDmg=dmg;t.lx0=t.x;t.ly0=t.y;u.liftV=false;t.dash=0;u.dash=0;u.face=t.x>=u.x?1:-1;sfx('whoosh');word('ХВАТЬ!',u.x,u.y-u.h*1.1,1.1);return;
     }
     hit(t);const cx=t.x,cy=t.y-t.h*.5;
     if(M.fx==='claw'){fx.push({k:'slash',x:cx,y:cy,t:0,life:.28,rot:rnd(-.4,.4),s:Math.min(t.h*.35,base*1.6)});sfx('slash')}
@@ -709,10 +712,14 @@ function update(dt){
       u.liftT-=dt;const b=u.liftBy;
       if(u.liftV){
         if(!b||b.dead){u.liftT=0;u.liftV=false}
-        else{u.x=b.x;u.y=b.y+1;if(u.liftT<=0){
-          u.liftV=false;u.x=b.x+b.face*(b.r+u.r)*.9;fit(u);const dm=u.liftDmg;
+        else{
+          const k=liftUp(u),lx=b.x+b.face*(b.r+u.r)*.9,k2=liftDown(u);
+          u.x=u.lx0+(b.x-u.lx0)*k+(lx-b.x)*k2;u.y=u.ly0+(b.y+1-u.ly0)*k;
+          if(u.liftT<=0){
+          u.liftV=false;u.x=lx;fit(u);const dm=u.liftDmg;
           hurt(u,dm,b.x,b.y,.5,false,b);word('ШМЯК!',u.x,u.y-u.h*.3,1.3);
           foesOf(b).forEach(o=>{if(o!==u&&!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<base*2.2)hurt(o,dm*.4,u.x,u.y,.5,false,b)});
+          for(let j=0;j<5;j++)smoke(u.x+rnd(-1,1)*u.r,u.y,rnd(-1,1)*base,-base*rnd(.3,1),base*rnd(.3,.6),'rgba(120,120,130,.5)');
         }}
       }
       if(u.liftT>0)continue;
@@ -760,7 +767,7 @@ function update(dt){
   }
   // расталкивание
   for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
-    const a=live[i],b=live[j];if(a.dead||b.dead)continue;
+    const a=live[i],b=live[j];if(a.dead||b.dead||a.liftV||b.liftV)continue; // поднятого над головой не расталкиваем
     const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||.01,m=(a.r+b.r)*.8;
     if(d<m){const k=(m-d)/d,wa=a.D.heavy?.1:b.D.heavy?.9:b.r/(a.r+b.r),wb=1-wa;a.x-=dx*k*wa;a.y-=dy*k*wa;b.x+=dx*k*wb;b.y+=dy*k*wb}
   }
@@ -860,7 +867,8 @@ function partAnim(P,u,t){
       break;
     case 'swing':
       rot=Math.sin(t*1.8+ph+P.px)*.05;
-      if(u.fearT>0)rot=P.dir*1.3+Math.sin(t*30)*.12;
+      if(u.liftT>0&&!u.liftV)rot=P.dir*(1.7*liftUp(u)*(1-liftDown(u))-.5*liftDown(u))+Math.sin(t*16)*.04;
+      else if(u.fearT>0)rot=P.dir*1.3+Math.sin(t*30)*.12;
       else if(an&&an.k==='scream')rot=P.dir*2.1*Math.sin(p*Math.PI);
       else if(an&&an.k==='melee'&&(!an.part||an.part===P.id))rot=swing(p)*(P.rd||1);
       else if(state==='over'&&!u.dead)rot=P.dir*(1.6+Math.sin(t*9+ph)*.3);
@@ -883,7 +891,7 @@ function partAnim(P,u,t){
       let n;
       if(P.anim==='swing'){
         n=Math.sin(t*1.8+ph+P.px)*.042;
-        if(u.fearT>0)n=P.dir*1.08+Math.sin(t*30)*.1;else if(an&&an.k==='scream')n=P.dir*1.75*Math.sin(p*Math.PI);else if(melee&&(!an.part||an.part===P.id))n=swing(p)/1.2;else if(state==='over'&&!u.dead)n=P.dir*(1.33+Math.sin(t*9+ph)*.25);
+        if(u.liftT>0&&!u.liftV)n=P.dir*(1.5*liftUp(u)*(1-liftDown(u))-.4*liftDown(u))+Math.sin(t*16)*.03;else if(u.fearT>0)n=P.dir*1.08+Math.sin(t*30)*.1;else if(an&&an.k==='scream')n=P.dir*1.75*Math.sin(p*Math.PI);else if(melee&&(!an.part||an.part===P.id))n=swing(p)/1.2;else if(state==='over'&&!u.dead)n=P.dir*(1.33+Math.sin(t*9+ph)*.25);
       }else{n=Math.sin(t*5+ph)*.087;if(melee&&(an.part?an.part===P.id:!P.bi))n=Math.sin(p*Math.PI)}
       rot=(n>=0?n*P.a1:-n*P.a0)*Math.PI/180;
     }else{dx*=A;dy*=A;rot*=A;sx=1+(sx-1)*A}
@@ -919,7 +927,7 @@ function drawUnit(u,t){
     }
     if(u.walking&&D.idle!=='stomp'&&D.idle!=='float'){if(D.veh)oy+=Math.sin(t*45+ph)*.7;else{oy-=Math.abs(Math.sin(t*9+ph))*u.h*.045;rot+=Math.sin(t*9+ph)*.05}}
     if(u.dash>0)rot+=.14;
-    if(u.liftT>0){const k=Math.min(1,(u.liftD-u.liftT)/.3);if(u.liftV&&u.liftBy){oy-=u.liftBy.h*.92*k;rot+=Math.sin(t*22+ph)*.1}else{sy*=1-.05*k;rot+=Math.sin(t*14)*.03}}
+    if(u.liftT>0){const k=liftUp(u),k2=liftDown(u);if(u.liftV&&u.liftBy){oy-=u.liftBy.h*.95*k*(1-k2);rot+=Math.sin(t*22+ph)*.1*k+k2*1.2*u.liftBy.face*u.face}else{sy*=1+.07*k*(1-k2)-.1*k2;rot+=Math.sin(t*14)*.025*k}}
     if(u.sawT>0){ox+=(Math.random()-.5)*2;rot+=.05}
     if(state==='over')oy-=Math.abs(Math.sin(t*7+ph))*u.h*.12;
     if(an){
@@ -949,7 +957,7 @@ function drawUnit(u,t){
   }
   if(!u.dead&&u.slowT>0){ctx.fillStyle='rgba(140,210,255,.3)';ctx.strokeStyle='#3aa0e8';ctx.lineWidth=1.6;rrect(u.x-u.w*.5,u.y-u.h,u.w,u.h*1.02,8);ctx.fill();ctx.stroke()}
   if(!u.dead){
-    const top=u.y-u.h-6;
+    const top=u.y-u.h-6-(u.liftT>0&&u.liftV&&u.liftBy?u.liftBy.h*.95*liftUp(u)*(1-liftDown(u)):0);
     if(S.set.mode==='path'&&!preview){ctx.font=`${clamp(base*.8,13,20)}px Neucha,cursive`;ctx.textAlign='center';ctx.fillStyle=PENCIL;ctx.fillText(EL[elOf(u.item)].ico+' '+(u.item.lvl||1),u.x,u.y+clamp(base*.9,14,22))}
     if(u.slowT>0){ctx.strokeStyle='#3aa0e8';ctx.lineWidth=2;for(let i=0;i<3;i++){const sx=u.x+(i-1)*u.w*.3,syy=u.y-u.h*(.35+.25*((i*7)%3)/2)+Math.sin(t*3+i)*3;for(let j=0;j<3;j++){const a=j*1.047;ctx.beginPath();ctx.moveTo(sx-Math.cos(a)*5,syy-Math.sin(a)*5);ctx.lineTo(sx+Math.cos(a)*5,syy+Math.sin(a)*5);ctx.stroke()}}}
     if(u.holdT>0){

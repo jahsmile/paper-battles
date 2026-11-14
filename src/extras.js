@@ -638,11 +638,11 @@ const passText=v=>v&&typeof v==='object'?String(v[passLang()]||v.en||v.ru||''):t
 function applyPass(it,P,quiet,noBuild){
   const o=Object.assign({},it.ov||{}),c=cleanOv(P);
   if(c.atks.length)o.atks=c.atks;if(c.chr!=='own')o.chr=c.chr;if(c.idle!=='own')o.idle=c.idle;
-  if(c.muz)o.muz=c.muz;if(c.at)o.at=c.at;if(c.parts.length&&!(o.parts&&o.parts.length)){o.parts=c.parts;o.rv=2}
+  if(c.muz)o.muz=c.muz;if(c.at)o.at=c.at;if(c.parts.length&&(P.force||!(o.parts&&o.parts.length))){o.parts=c.parts;o.rv=2}
   if(EL[P.el])o.el=P.el;o.cool=clamp(Math.round(+P.cool||3),1,5);o.kind=passText(P.kind).slice(0,32);o.note=passText(P.note).slice(0,160);
   const L=P.lines&&(P.lines[passLang()]||P.lines.en||P.lines.ru);
   if(L&&typeof L==='object'){o.lines={};['start','kill','low','win'].forEach(k=>{o.lines[k]=typeof L[k]==='string'?L[k].slice(0,90):''})}
-  o.pass=1;it.ov=o;OV[it.id]=o;if(!noBuild)buildD(it);if(!quiet)saveState();
+  o.pass=Math.max(1,Math.round(+P.rev||1));it.ov=o;OV[it.id]=o;if(!noBuild)buildD(it);if(!quiet)saveState();
 }
 let cardDone=null;
 function showCard(it,kind,P){
@@ -662,10 +662,11 @@ $('cardOk').onclick=()=>{$('card').hidden=true;if(cardDone){const f=cardDone;car
 async function passCheck(){
   if(!gal.base||state!=='setup'||!$('card').hidden)return;
   for(const it of library){
-    const o=it.ov;if(!it.custom||!o||!o.gid||o.pass||it._pc)continue;it._pc=1;
+    const o=it.ov;if(!it.custom||!o||!o.gid||it._pc)continue;it._pc=1;
     const P=await fetch(gal.base.replace(/heroes\/$/,'meta/')+o.gid+'.json').then(x=>x.ok?x.json():null).catch(()=>null);
-    if(P&&state==='setup'&&$('card').hidden){showCard(it,'pass',P);return}
-    if(P)it._pc=0;
+    if(!P||(o.pass||0)>=Math.max(1,Math.round(+P.rev||1)))continue;
+    if(state==='setup'&&$('card').hidden){showCard(it,'pass',P);return}
+    it._pc=0;
   }
 }
 async function galPreload(){
