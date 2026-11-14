@@ -685,7 +685,7 @@ const path={node:0,stars:0,tab:'inc',foeLvl:1,news:[]};
 const STARTERS=['d-king','d-dino','d-golem'];
 const FALL={blot:'black',pin:'teeth',clip:'blade',sharp:'saw',scis:'rider',glue:'purple',eraser:'fort'}; // пока нет рисунка врага — стёртый герой
 // t: b — бой, c — сундук с красками, h — герой в беде, n — гнездо, boss — логово. x,y — место на карте в процентах
-const NODES=[
+const NODES0=[
   {id:0,t:'b',x:52,y:83,need:[],name:'Клякса-дозорный',foes:[['blot',1,.8]],paint:20,pre:'n0'},
   {id:1,t:'c',x:14,y:85,need:[0],paint:30},
   {id:2,t:'b',x:72,y:75,need:[0],name:'Колючая тропа',foes:[['pin',1,.85],['pin',1,.85],['blot',1,.7]],paint:25},
@@ -707,31 +707,73 @@ const SCENES={
   blade:[['d-blade','Ластик стёр мою реку. Я покажу дорогу к его логову.'],['me','Идём вместе!']],
   boss:[['eraser','Опять рисунки? Сотру вас до последней чёрточки!'],['me','Попробуй. Нас уже много.']],
   end:[['eraser','Это ещё не конец! В альбоме много страниц…'],['d-fort','Спасибо! Я снова цветная. Пойду с вами.']]};
-const TREE=[['a','Сила','урон'],['d','Броня','здоровье'],['s','Скорость','скорость и темп атаки']],TCOST=[20,40,70,110];
+let NODES=NODES0;NODES0.forEach(n=>{n.key=n.id});
+// страницы альбома: первая нарисована вручную, остальные собираются по тому же плану, но враги сильнее
+const THEMES=[{n:'Мелковое море',map:2,bg:'sea',boss:'blot',talk:'Ластик удрал за море. Плывём за ним!'},{n:'Песочница',map:3,bg:'sand',boss:'sharp',talk:'Сколько песка… Ластик прячется в пирамиде!'},{n:'Космос',map:4,bg:'space',boss:'scis',talk:'Он улетел в космос! Заводи ракету.'},
+  {n:'Кубиковый город',map:5,bg:'blocks',boss:'glue',talk:'Город из кубиков совсем серый. Раскрасим!'},{n:'Замок Ластика',map:6,bg:'lava',boss:'eraser',talk:'Вот он, замок Ластика. Вперёд!'}],ROMAN=['','II','III','IV'];
+const PAGES=[{n:'Опушка',map:1}];
+for(let r=0;r<4;r++)THEMES.forEach(t=>PAGES.push(Object.assign({},t,{n:t.n+(r?' '+ROMAN[r]:''),r})));
+PAGES.forEach((P,k)=>{if(!k)return;const last=k===PAGES.length-1;
+  SCENES['pg'+k]=[['me',last?'Последняя страница альбома. Ластик ждёт нас там.':P.r?'Ластик вернулся и стёр страницу заново. Раскрасим её ещё ярче!':P.talk]];
+  SCENES['bs'+k]=[[P.boss,'Эта страница теперь моя. Серая и тихая!'],['me','Ненадолго. Мы вернём ей цвет!']]});
+SCENES.fin=[['eraser','Всё, всё, сдаюсь! Рисуйте свой альбом…'],['me','Альбом спасён! А рисовать мы не перестанем.']];
+const HEROES=['king','dino','golem','teeth','black','duo','blade','rider','saw','fort','purple','witch'],RAR={king:0,dino:0,golem:0,teeth:0,black:0,duo:1,blade:1,rider:1,saw:1,fort:2,purple:2,witch:2};
+const FOEK=['blot','pin','clip','sharp','scis','glue'],PHERO={1:['d-teeth','d-rider'],2:['d-black','d-saw'],3:['d-purple','d-witch']},BIDS=[0,2,4,6,8,10,12];
+const CHT={w:{n:'Коробок',t:600},s:{n:'Пенал',t:3600},g:{n:'Сундук',t:14400},e:{n:'Сокровище',t:43200}};
+const SCOST=[20,60,150,450,1000],SUMN=[20,40,80];
+const pageCache={};
+function pageNodes(k){
+  if(!k)return NODES0;if(pageCache[k])return pageCache[k];
+  const P=PAGES[k],her=PHERO[k]||[];
+  // сила отряда врагов (n.pw) растёт от боя к бою: первые три страницы быстро, дальше примерно по одному бою в день-два
+  const epw=g=>Math.round(.85*(g<21?128+22.7*g:g<37?605+40*(g-21):1245+34*(g-37)));
+  return pageCache[k]=NODES0.map(o=>{
+    const n={id:o.id,key:k*100+o.id,t:o.t,x:o.x,y:o.y,need:o.need},i=BIDS.indexOf(o.id),lv=1+3*k+i;
+    if(o.t==='b'){const cnt=Math.min(3+(i>1?1:0)+(i>3&&k>1?1:0),5),fs=[];
+      for(let j=0;j<cnt;j++)fs.push(j===0&&i>2?['x-'+HEROES[(k*5+i)%12],lv,1.1]:[FOEK[(k*7+i*3+j*5)%6],lv,j?.9:1.05]);
+      n.foes=fs;n.name=P.n;n.num=i+1;n.paint=30+4*k+3*i}
+    else if(o.t==='boss'){n.foes=[[P.boss,lv,1.1,1.6],['x-'+HEROES[(k*3+1)%12],lv,1],[FOEK[(k+2)%6],lv,.9],[FOEK[(k+4)%6],lv,.9]];if(k>5)n.foes.push([FOEK[(k+1)%6],lv,.9]);
+      n.name=P.n;n.boss=1;n.paint=120+15*k;n.pre='bs'+k;if(k===PAGES.length-1)n.post='fin'}
+    else if(o.t==='h'){const h=her[o.id===3?0:1];if(h)n.hero=h;else{n.t='c';n.chest='s'}}
+    else if(o.t==='n'){n.t='c';n.chest=k%3?'s':'g'}
+    else n.paint=40+10*k+o.id*3;
+    if(n.foes)n.pw=epw((k-1)*7+i);
+    return n});
+}
+const nodeName=n=>n.num?n.name+' · '+n.num:n.boss?n.name+' · '+'босс':n.name||'';
+const nodeSh=n=>'d-'+HEROES[(((n.key-n.id)/100)*7+BIDS.indexOf(n.id))%12];
+const pageOpen=k=>k===0||!!PS().nd[(k-1)*100+12];
+const starsPage=k=>BIDS.reduce((a,i)=>a+(PS().nd[k*100+i]||0),0);
+const pathTeam=()=>3+(PS().nd[212]?1:0)+(PS().nd[512]?1:0);
+const hStar=h=>h.s||1,hCap=h=>10*hStar(h);
+const shHave=id=>PS().sh[id]||0;
+const shCan=(it,need)=>(it.custom?0:shHave(it.id))+PS().wild>=need;
+function shPay(it,need){const p=PS(),own=it.custom?0:Math.min(shHave(it.id),need);if(own+p.wild<need)return false;if(own)p.sh[it.id]-=own;p.wild-=need-own;return true}
+function shBar(have,need,ico){const b=el('div','shbar'+(have>=need?' full':'')),i=el('i');i.style.width=Math.min(100,Math.round(have/need*100))+'%';b.append(i,el('b','',(ico||'🧩')+' '+have+' / '+need));return b}
+const TREE=[['a','Сила','урон'],['d','Броня','здоровье'],['s','Скорость','скорость и темп атаки']],TCOST=[20,50,100,180,300,450,650,900,1200,1600];
 function PS(){
-  const p=S.path||(S.path={});p.h=p.h||{};p.own=p.own||[];p.wins=p.wins||0;p.paint=p.paint||0;p.seen=p.seen||{};p.ms=p.ms||{set:0,w:0,f:0,k:0,got:[0,0,0]};
-  if(!p.nd){p.nd={};const old=p.st?p.st.filter(Boolean).length:(p.rung||0),bs=NODES.filter(n=>n.t==='b'||n.t==='boss');for(let i=0;i<Math.min(old,bs.length);i++)p.nd[bs[i].id]=1} // старый прогресс переносим на карту
+  const p=S.path||(S.path={});p.h=p.h||{};p.own=p.own||[];p.wins=p.wins||0;p.paint=p.paint||0;p.seen=p.seen||{};p.ms=p.ms||{set:0,w:0,f:0,k:0,got:[0,0,0]};p.sh=p.sh||{};p.ch=p.ch||[];p.gem=p.gem||0;p.wild=p.wild||0;p.pg=p.pg||0;
+  if(!p.nd){p.nd={};const old=p.st?p.st.filter(Boolean).length:(p.rung||0),bs=NODES0.filter(n=>n.t==='b'||n.t==='boss');for(let i=0;i<Math.min(old,bs.length);i++)p.nd[bs[i].id]=1} // старый прогресс переносим на карту
   return p;
 }
 const pathH=id=>{const p=PS(),h=p.h[id]||(p.h[id]={l:1,x:0});h.t=h.t||{a:0,d:0,s:0};return h};
-const pathNeed=l=>30+20*l;
+const pathNeed=l=>Math.round(30+20*l+.1*l*l*l);
 const isEgg=it=>!!(it.custom&&it.ov&&it.ov.egg&&!it.ov.hatch);
 const pathOwns=it=>!it.prop&&(it.custom?!!(it.ov&&(it.ov.hatch||(it.ov.pass&&!it.ov.egg))):PS().own.includes(it.id));
 const pathRoster=()=>library.filter(pathOwns);
-const nodeOpen=n=>n.need.every(i=>PS().nd[i]);
-const starsAll=()=>NODES.reduce((a,n)=>a+(n.t==='b'||n.t==='boss'?PS().nd[n.id]||0:0),0);
-const starsMax=()=>NODES.filter(n=>n.t==='b'||n.t==='boss').length*3;
-const eggSlots=()=>NODES.filter(n=>(n.t==='n'||n.t==='boss')&&PS().nd[n.id]).length;
-const pathLabel=()=>T(NODES[path.node].name||'');
+const nodeOpen=n=>pageOpen((n.key-n.id)/100)&&n.need.every(i=>PS().nd[n.key-n.id+i]);
+const starsAll=()=>PAGES.reduce((a,P,k)=>a+starsPage(k),0);
+const eggSlots=()=>{const d=PS().nd;return(d[5]?1:0)+(d[12]?1:0)+(d[112]?1:0)};
+const pathLabel=()=>nodeName(NODES[path.node]||NODES[0]);
 function pathTag(it){const b=it.pit||it,h=it.lvl?{l:it.lvl}:pathH(b.id),e2=EL[elOf(it)];return e2.ico+' '+e2.name+' · ур. '+h.l}
-function pathItem(it,l,k,tr){ // монстрик для кампании: сила от уровня и улучшений, а не от настроек песочницы
+function pathItem(it,l,k,tr,st){ // монстрик для кампании: сила от уровня и улучшений, а не от настроек песочницы
   const slots=l>=6?3:l>=3?2:1,o=Object.assign({},it.ov||{},{pw:(1+.1*(l-1))*(k||1),sp:1,as:1,size:1}),q=tr||{a:0,d:0,s:0};
   if(o.atks&&o.atks.length)o.atks=o.atks.slice(0,slots);
   const n=Object.assign({},it,{ov:o,pit:it,lvl:l,size:1});buildD(n);n.size=1;const D=n.D;
   D.atks=D.atks.slice(0,slots);D.atk=D.atks[0];D.noSup=l<2;
-  D.hp*=1+.12*q.d;D.dm0*=1+.12*q.a;D.speed*=1+.08*q.s;D.as*=1+.08*q.s;D.pw=Math.round(D.pw*(1+.1*(q.a+q.d)+.05*q.s));return n;
+  const sm=1+.15*((st||1)-1);D.hp*=(1+.1*q.d)*sm;D.dm0*=(1+.1*q.a)*sm;D.speed*=1+.04*q.s;D.as*=1+.05*q.s;D.pw=Math.round(D.pw*(1+.09*(q.a+q.d)+.04*q.s)*sm);return n;
 }
-const myItem=it=>{const h=pathH(it.id);return pathItem(it,h.l,1,h.t)};
+const myItem=it=>{const h=pathH(it.id);return pathItem(it,h.l,1,h.t,hStar(h))};
 function erased(it){ // стёртый рисунок: тот же герой, но серый
   if(it._er)return it._er;const im=it.base.img;if(!im||!(im.complete===undefined||im.naturalWidth||im.width))return it;
   try{
@@ -743,20 +785,25 @@ function erased(it){ // стёртый рисунок: тот же герой, �
 // фон боя в приключении: у каждого места свой рисунок
 const BGS={0:'meadow',1:'meadow',2:'thorns',3:'thorns',4:'river',5:'river',6:'forest',7:'forest',8:'pass',9:'forest',10:'swamp',11:'swamp',12:'lair'},bgImg={};
 function pathBg(g){
-  const k=BGS[path.node];if(!k)return true;let im=bgImg[k];
+  const pg=PS().pg,nn=NODES[path.node],k=pg?(nn&&nn.boss?'lair':PAGES[pg].bg):BGS[path.node];if(!k)return true;let im=bgImg[k];
   if(!im){im=bgImg[k]=new Image();im.onload=()=>{if(bg&&S.set.mode==='path')makePaper()};im.onerror=()=>{im.bad=1};im.src='assets/bg_'+k+'.webp'}
   if(im.bad)return false;if(!(im.complete&&im.naturalWidth))return true;
   const rot=(im.width>im.height)!==(W>H),iw=rot?im.height:im.width,ih=rot?im.width:im.height,sc=Math.max(W/iw,H/ih);
   g.save();g.translate(W/2,H/2);if(rot)g.rotate(Math.PI/2);g.globalAlpha=.8;g.drawImage(im,-im.width*sc/2,-im.height*sc/2,im.width*sc,im.height*sc);g.restore();return true;
 }
-function foeBase(k){const own=library.find(q=>q.id==='d-'+k);if(own)return own;const f=library.find(q=>q.id==='d-'+FALL[k]);return f?erased(f):null}
-function nodeFoes(n){return n.foes.map(f=>{const b=foeBase(f[0]);return b?{it:pathItem(b,f[1],f[2]*(n.t==="boss"?1.08:1.15)),sz:f[3]||1}:null}).filter(Boolean)}
+function foeBase(k){if(k[1]==='-'){const h=library.find(q=>q.id==='d-'+k.slice(2));return h?erased(h):null}const own=library.find(q=>q.id==='d-'+k);if(own)return own;const f=library.find(q=>q.id==='d-'+FALL[k]);return f?erased(f):null}
+function nodeFoes(n){
+  const mk=m=>n.foes.map(f=>{const b=foeBase(f[0]);return b?{it:pathItem(b,f[1],f[2]*m),sz:f[3]||1}:null}).filter(Boolean),km=window.__km||1;
+  if(!n.pw)return mk(km*(n.t==='boss'?1.08:1.15));
+  const sum=mk(1).reduce((a,f)=>a+power(f.it.D,f.sz),0)||1;return mk(km*n.pw/sum); // подгоняем отряд под нужную силу
+}
 function pathXp(id,gain,ups){
-  const h=pathH(id),it=library.find(i=>i.id===id);h.x+=gain;
-  while(h.x>=pathNeed(h.l)){h.x-=pathNeed(h.l);h.l++;if(ups)ups.push((it?it.name:'')+' — '+'уровень'+' '+h.l+(h.l===2?' ('+'открыт суперудар'+')':h.l===3?' ('+'вторая атака'+')':h.l===6?' ('+'третья атака'+')':''))}
+  const h=pathH(id),it=library.find(i=>i.id===id),cap=hCap(h);if(h.l>=cap){h.x=0;return}h.x+=gain;
+  while(h.l<cap&&h.x>=pathNeed(h.l)){h.x-=pathNeed(h.l);h.l++;if(ups)ups.push((it?it.name:'')+' — '+'уровень'+' '+h.l+(h.l===2?' ('+'открыт суперудар'+')':h.l===3?' ('+'вторая атака'+')':h.l===6?' ('+'третья атака'+')':''))}
+  if(h.l>=cap)h.x=0;
 }
 function pathLoad(keep){
-  const p=PS(),mine=keep&&snapshot?snapshot.filter(q=>q.team===0):[],n=NODES[path.node];
+  const p=PS();NODES=pageNodes(p.pg);if(!NODES[path.node])path.node=0;const mine=keep&&snapshot?snapshot.filter(q=>q.team===0):[],n=NODES[path.node];
   units=[];props=[];selU=selP=selected=null;
   mine.forEach(q=>{const b=q.item.pit||q.item,pos=fromAB(q.a,q.b);if(pathOwns(b)&&!pathH(b.id).ko)units.push(makeUnit(myItem(b),pos.x,pos.y,0,1))});
   if(p.own.length&&n.foes){const fs=nodeFoes(n);path.foeLvl=Math.max(...n.foes.map(f=>f[1]));
@@ -764,20 +811,23 @@ function pathLoad(keep){
   $('fight').textContent=fightLabel();renderLib();if(bg)makePaper();
 }
 function pathFinish(won){
-  const p=PS(),n=NODES[path.node],mineQ=snapshot.filter(q=>q.team===0),ids=[...new Set(mineQ.map(q=>(q.item.pit||q.item).id))],gain=won?20+8*path.foeLvl:8,ups=[],extra=[];
+  const p=PS(),n=NODES[path.node],mineQ=snapshot.filter(q=>q.team===0),ids=[...new Set(mineQ.map(q=>(q.item.pit||q.item).id))],gain=won?20+5*path.foeLvl:8,ups=[],extra=[];
   ids.forEach(id=>pathXp(id,gain,ups));path.stars=0;path.news=[];path.after=null;
   Object.values(p.h).forEach(h=>{if(h.ko>0)h.ko--}); // стёртые отдыхают один бой
   const dead=!won?[]:[...new Set(units.filter(u=>u.team===0&&u.dead).map(u=>(u.item.pit||u.item).id))];dead.forEach(id=>{pathH(id).ko=1});
   let pay=won?8:3;
   if(won){
-    const all=mineQ.length,left=units.filter(u=>u.team===0&&!u.dead).length,first=!p.nd[n.id];
-    path.stars=left>=all?3:left*2>=all?2:1;p.nd[n.id]=Math.max(p.nd[n.id]||0,path.stars);
-    p.wins++;p.ms.w++;p.ms.k+=units.filter(u=>u.team===0).reduce((a,u)=>a+u.kills,0);if(left>=all)p.ms.f++;
+    const all=mineQ.length,left=units.filter(u=>u.team===0&&!u.dead).length,old=p.nd[n.key]||0,first=!old,kills=units.filter(u=>u.team===0).reduce((a,u)=>a+u.kills,0);
+    path.stars=left>=all?3:left*2>=all?2:1;p.nd[n.key]=Math.max(old,path.stars);if(path.stars>old){p.gem+=path.stars-old;extra.push('✨ +'+(path.stars-old))}
+    qAdd('w',1);qAdd('k',kills);if(left>=all)qAdd('f',1);
+    p.wins++;p.ms.w++;p.ms.k+=kills;if(left>=all)p.ms.f++;
     if(first){pay=n.paint||20;
       if(n.hero&&!p.own.includes(n.hero)&&library.some(q=>q.id===n.hero)){p.own.push(n.hero);path.news.push(n.hero)}
-      if(n.t==='boss')extra.push('Страница спасена!');if(n.post)path.after=n.post;}
+      if(n.t==='boss'){extra.push('Страница спасена!');if(p.pg<PAGES.length-1)extra.push('Открыта следующая страница')}if(n.post)path.after=n.post;}
+    const ck=first?(n.t==='boss'?(n.key>=100?'e':'g'):Math.random()<.25?'s':'w'):Math.random()<.35?'w':null;
+    if(ck)extra.push(chestAdd(ck)?'Добыча'+': '+CHT[ck].n:'Для сундука нет места');
   }
-  p.paint+=pay;
+  p.paint+=pay;if(!won)extra.push('Враги пока сильнее: улучши монстриков, открой сундуки или сходи в рейд');
   if(!pathRoster().some(it=>!pathH(it.id).ko)){Object.values(p.h).forEach(h=>{h.ko=0})}
   else if(dead.length)extra.push('Стёрты и пропустят один бой'+': '+dead.map(id=>{const it=library.find(q=>q.id===id);return it?it.name:''}).filter(Boolean).join(', '));
   return{title:won?'Победа!':'Не вышло',text:'Опыт'+' +'+gain+' · 🎨 +'+pay+(extra.length?' · '+extra.join(' · '):'')+(ups.length?' · '+ups.join(' · '):''),again:'Дальше'};
@@ -796,7 +846,7 @@ async function eggSend(it){
     const j=x.ok?await x.json().catch(()=>null):null;
     if(j&&j.id){it.ov=Object.assign({},it.ov||{},{gid:j.id});OV[it.id]=it.ov;saveState()}
   }catch(err){}
-  it._send=0;if(!$('hub').hidden)hubRender();
+  it._send=0;if(path.tab==='heroes')tabRender();
 }
 async function eggCheck(){
   for(const it of library.filter(isEgg)){
@@ -806,106 +856,206 @@ async function eggCheck(){
     const P=await fetch(gal.base.replace(/heroes\/$/,'meta/')+it.ov.gid+'.json',{cache:'no-store'}).then(x=>x.ok?x.json():null).catch(()=>null);
     if(P){it._P=P;it._ready=true}
   }
-  homeBadges();if(!$('hub').hidden&&path.tab==='inc')hubRender();
+  const rk=library.filter(i=>isEgg(i)&&i._ready).length;if(rk!==eggCheck.n){eggCheck.n=rk;if(path.tab==='heroes')tabRender();else tabSync()}
 }
-function eggHatch(it){$('hub').hidden=true;$('home').hidden=true;it._hatch=true;showCard(it,it._P?'pass':'scan',it._P)}
+function eggHatch(it){it._hatch=true;showCard(it,it._P?'pass':'scan',it._P)}
 // ----- задания
 function missions(){const m=PS().ms,s=m.set;return[
   {t:'Победи на карте',n:m.w,g:2+s},{t:'Победи, не потеряв ни одного монстрика',n:m.f,g:1+(s>>1)},{t:'Одолей врагов',n:m.k,g:5+2*s}]}
 function missionClaim(i){
-  const p=PS(),ms=missions();if(p.ms.got[i]||ms[i].n<ms[i].g)return;p.ms.got[i]=1;p.paint+=25;
-  const ups=[];pathRoster().forEach(it=>pathXp(it.id,40,ups));toast('Опыт'+' +40 · 🎨 +25'+(ups.length?' · '+ups.join(' · '):''));sfx('win');
+  const p=PS(),ms=missions();if(p.ms.got[i]||ms[i].n<ms[i].g)return;p.ms.got[i]=1;p.paint+=25;p.gem+=2;
+  const ups=[];pathRoster().forEach(it=>pathXp(it.id,40,ups));toast('Опыт'+' +40 · 🎨 +25 · ✨ +2'+(ups.length?' · '+ups.join(' · '):''));sfx('win');
   if(p.ms.got.every(Boolean))p.ms={set:p.ms.set+1,w:0,f:0,k:0,got:[0,0,0]};
-  saveState();hubRender();homeBadges();
+  saveState();tabRender();
 }
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n};
 function heroCard(it,plain){
-  const c=el('div','hcard'),im=el('img');im.src=it.src;im.alt='';const e2=EL[elOf(it)];c.append(im,el('b','',it.name),el('span','',e2.ico+' '+e2.name));
-  if(plain)return c;
-  const h=pathH(it.id),bar=el('div','xpbar'),fill=el('i');fill.style.width=Math.round(h.x/pathNeed(h.l)*100)+'%';bar.append(fill);if(h.ko)c.classList.add('ko');
-  c.append(el('span','','Уровень'+' '+h.l+' · '+'сила'+' '+power(myItem(it).D,1)),bar,el('small','',h.ko?'Стёрт: пропустит один бой':h.l<2?'Ур. 2: суперудар':h.l<3?'Ур. 3: вторая атака':h.l<6?'Ур. 6: третья атака':'Все атаки открыты'));
+  const c=el('div','hcard'),im=el('img');im.src=it.src;im.alt='';const e2=EL[elOf(it)];c.append(im,el('b','',it.name));
+  if(plain){c.append(el('span','',e2.ico+' '+e2.name));return c}
+  const h=pathH(it.id),st=hStar(h),bar=el('div','xpbar'),fill=el('i');fill.style.width=(h.l>=hCap(h)?100:Math.round(h.x/pathNeed(h.l)*100))+'%';bar.append(fill);if(h.ko)c.classList.add('ko');
+  c.append(el('span','stars','★'.repeat(st)+'☆'.repeat(6-st)),el('span','',e2.ico+' '+'ур.'+' '+h.l+' · '+'сила'+' '+power(myItem(it).D,1)),bar);
+  if(st<6)c.append(it.custom?shBar(PS().wild,SCOST[st-1],'🌈'):shBar(shHave(it.id),SCOST[st-1]));
+  if(h.ko)c.append(el('small','','Стёрт: пропустит один бой'));
   return c;
 }
-// карточка монстрика с ветками улучшений за краски
+// карточка монстрика: звёзды за обрывки, ветки улучшений за краски
 function monOpen(it,note){
-  const p=PS(),h=pathH(it.id),box=$('monCard');box.textContent='';if(note)box.append(el('p','hubnote',note));box.append(heroCard(it));
+  const p=PS(),h=pathH(it.id),st=hStar(h),box=$('monCard');box.textContent='';if(note)box.append(el('p','hubnote',note));box.append(heroCard(it));
   if(!note){
-    if(h.ko){const b=el('button','btn mark','Раскрасить заново'+' · 🎨 10');b.type='button';b.disabled=p.paint<10;b.onclick=()=>{p.paint-=10;h.ko=0;saveState();monOpen(it);homeOpen(true)};box.append(b)}
+    const again=()=>{saveState();sfx('pop');monOpen(it);tabRender()};
+    if(h.ko){const b=el('button','btn mark','Раскрасить заново'+' · 🎨 10');b.type='button';b.disabled=p.paint<10;b.onclick=()=>{p.paint-=10;h.ko=0;again()};box.append(b)}
+    box.append(el('p','hubnote',h.l>=hCap(h)?'Уровень на пределе: нужна новая звезда.':'Опыт дают бои и рейды. Предел уровня'+': '+hCap(h)+(h.l<2?' · '+'Ур. 2: суперудар':h.l<3?' · '+'Ур. 3: вторая атака':h.l<6?' · '+'Ур. 6: третья атака':'')));
+    if(st<6){const need=SCOST[st-1],b=el('button','btn mark','Новая звезда'+' · 🧩 '+need);b.type='button';b.style.margin='0';b.disabled=!shCan(it,need);b.onclick=()=>{if(!shPay(it,need))return;h.s=st+1;qAdd('u',1);again()};
+      box.append(b,el('small','twhat','Звезда: +15% к силе и здоровью, предел уровня +10. Не хватает обрывков — добавятся радужные 🌈'+' ('+p.wild+').'))}
     const tr=el('div','tree');
     TREE.forEach(([k,nm,what])=>{
-      const r=h.t[k],row=el('div','trow'),pips=el('span','pips');for(let i=0;i<4;i++)pips.append(el('i',i<r?'on':''));
-      row.append(el('b','',nm),pips);
-      if(r>=4)row.append(el('small','','макс.'));
-      else{const cost=TCOST[r],lock=h.l<r+1,b=el('button','btn sm '+(lock?'light':'mark'),lock?'ур.'+' '+(r+1):'🎨 '+cost);b.type='button';b.disabled=lock||p.paint<cost;b.title=nm+': +'+what;
-        b.onclick=()=>{p.paint-=cost;h.t[k]++;saveState();sfx('pop');monOpen(it);homeOpen(true)};row.append(b)}
+      const r=h.t[k],row=el('div','trow');row.append(el('b','',nm),el('span','pips',r+' / 10'));
+      if(r>=10)row.append(el('small','','макс.'));
+      else{const cost=TCOST[r],lv=r*4+1,lock=h.l<lv,b=el('button','btn sm '+(lock?'light':'mark'),lock?'ур.'+' '+lv:'🎨 '+cost);b.type='button';b.disabled=lock||p.paint<cost;b.title=nm+': +'+what;
+        b.onclick=()=>{p.paint-=cost;h.t[k]++;qAdd('u',1);again()};row.append(b)}
       tr.append(row,el('small','twhat','+'+what));
     });
     box.append(el('p','hubnote','Улучшения за краски'+' · 🎨 '+p.paint),tr);
   }
   $('mon').hidden=false;
 }
-// ----- окно гнезда, доски и монстриков
-function hubOpen(tab){path.tab=tab||path.tab;$('hub').hidden=false;hubRender();if(path.tab==='inc')eggCheck()}
-function hubRender(){
-  const p=PS(),box=$('hubBody');box.textContent='';
-  $('hubTitle').textContent=path.tab==='inc'?'Гнездо':path.tab==='ms'?'Доска заданий':'Мои монстрики';
-  if(path.tab==='heroes'){
-    const row=el('div','hubcards');pathRoster().forEach(it=>{const c=heroCard(it);c.onclick=()=>{$('hub').hidden=true;monOpen(it)};row.append(c)});
-    box.append(el('p','hubnote','Тапни монстрика, чтобы улучшить его за краски. В бой можно взять троих.'),row);
-  }else if(path.tab==='inc'){
-    const slots=eggSlots(),eggs=library.filter(isEgg),need=['Найди гнездо на карте','Откроется после Ластика','Откроется на следующей странице'],row=el('div','hubcards');
-    for(let i=0;i<3;i++){
-      const c=el('div','hcard egg');
-      if(i>=slots){c.append(el('div','eggpic lock','🔒'),el('span','',need[i]))}
-      else if(eggs[i]){
-        const it=eggs[i],pic=el('div','eggpic'+(it._ready?' ready':'')),im=el('img');im.src=it.src;im.alt='';pic.append(im);c.append(pic,el('b','',it.name));
-        if(it._ready){const b=el('button','btn mark','Вылупить');b.type='button';b.onclick=()=>eggHatch(it);c.append(el('span','','Готов вылупиться!'),b)}
-        else c.append(el('span','',!gal.api?'Греется от побед на карте. Осталось побед'+': '+Math.max(1,2-(p.wins-(it.ov.eggW||0))):it.ov.gid?'Рисунок проверяют и учат двигаться. Загляни позже.':'Нет связи: отправим рисунок при следующем заходе.'));
-      }else{const b=el('button','btn dark','Положить рисунок');b.type='button';b.onclick=()=>{$('incAsk').hidden=false};c.append(el('div','eggpic empty','＋'),b)}
-      row.append(c);
-    }
-    box.append(el('p','hubnote','Принеси свой рисунок: он полежит в яйце, пока его проверяют и учат двигаться, а потом вылупится монстриком.'),row);
-  }else{
-    const list=el('div','tower'),got=p.ms.got;
-    missions().forEach((q,i)=>{const row=el('div','floor'+(got[i]?' done':q.n>=q.g?' cur':''));row.append(el('b','',got[i]?'✓':'★'),el('span','',q.t+': '+Math.min(q.n,q.g)+' / '+q.g));
-      if(!got[i]&&q.n>=q.g){const b=el('button','btn mark','Забрать');b.type='button';b.onclick=()=>missionClaim(i);row.append(b)}else row.append(el('i','','🎨 +25'));list.append(row)});
-    box.append(el('p','hubnote','За задание дают краски и опыт всем монстрикам. Выполнишь все три — появятся новые.'),list);
-  }
+// ----- сундуки, обрывки и подарки
+const fmtT=s=>{s=Math.max(0,Math.ceil(s));const h=s/3600|0,m=(s%3600)/60|0,x=s%60;return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')};
+const chLeft=c=>(c.at+CHT[c.k].t*1000-Date.now())/1000;
+function rollHero(minR){const r=Math.random(),ra=minR!=null?minR:r<.6?0:r<.9?1:2,l=HEROES.filter(h=>RAR[h]===ra);return 'd-'+l[Math.random()*l.length|0]}
+function chestRoll(k){
+  const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),L={paint:0,gem:0,wild:0,sh:{}},add=(id,n)=>{L.sh[id]=(L.sh[id]||0)+n};
+  if(k==='w'){L.paint=R(15,30);add(rollHero(),R(2,3))}
+  else if(k==='s'){L.paint=R(40,80);add(rollHero(),R(4,5));add(rollHero(),R(2,3));if(Math.random()<.3)L.wild=1}
+  else if(k==='g'){L.paint=R(120,200);L.gem=R(3,5);add(rollHero(),R(7,9));add(rollHero(),R(5,6));add(rollHero(1),R(4,5));L.wild=R(1,2)}
+  else{L.paint=R(300,450);L.gem=R(10,15);add(rollHero(),R(14,18));add(rollHero(1),R(10,12));add(rollHero(2),R(8,10));add(rollHero(2),R(4,6));L.wild=R(3,5)}
+  return L;
 }
-$('hubGo').onclick=()=>{$('hub').hidden=true};
-$('incNo').onclick=()=>{$('incAsk').hidden=true};
-$('incOk').onclick=()=>{$('incAsk').hidden=true;$('hub').hidden=true;$('home').hidden=true;incub=true;$('file').click()};
-// ----- дом: полянка, где живут монстрики
-let homeTimer=0;
-function homeBadges(){
-  const ms=missions(),got=PS().ms.got;
-  $('plNest').classList.toggle('dot',library.some(i=>isEgg(i)&&i._ready));$('plNest').classList.toggle('off',!eggSlots());
-  $('plBoard').classList.toggle('dot',ms.some((q,i)=>!got[i]&&q.n>=q.g));
-  $('hubBtn').classList.toggle('dot',$('plNest').classList.contains('dot')||$('plBoard').classList.contains('dot'));
+function chestAdd(k){const p=PS();if(p.ch.length>=4)return false;p.ch.push({k,at:Date.now()});return true}
+function lootGive(L){const p=PS();p.paint+=L.paint||0;p.gem+=L.gem||0;p.wild+=L.wild||0;for(const id in L.sh||{})p.sh[id]=(p.sh[id]||0)+L.sh[id];saveState()}
+function lootShow(title,k,L){
+  lootGive(L);const box=$('monCard');box.textContent='';box.append(el('h2','',title));
+  if(k){const im=el('img','lootpic');im.src='assets/chest_'+k+'.webp';im.alt='';box.append(im)}
+  const g=el('div','loot'),chip=(ico,txt,img)=>{const d=el('div');if(img){const i=el('img');i.src=img;i.alt='';d.append(i)}else d.append(el('em','',ico));d.append(el('b','',txt));g.append(d);return d};
+  if(L.paint)chip('🎨','+'+L.paint);if(L.gem)chip('✨','+'+L.gem);if(L.wild)chip('🌈','+'+L.wild);if(L.xp)chip('⭐','Опыт'+' +'+L.xp);
+  for(const id in L.sh||{}){const it=library.find(q=>q.id===id);if(it)chip('','🧩 +'+L.sh[id],it.src).append(el('small','',it.name))}
+  if(L.chest)chip('','+1','assets/chest_'+L.chest+'.webp').append(el('small','',CHT[L.chest].n));
+  box.append(g);$('mon').hidden=false;sfx('win');tabRender();
 }
-function homeOpen(keep){
-  if(S.set.mode!=='path')return;const p=PS();
-  if(!p.own.length){introOpen();return}
-  if(keep!==true)['map','hub','intro'].forEach(k=>{$(k).hidden=true});
-  if(keep===true&&$('home').hidden){if(!$('map').hidden)$('mapPaint').textContent='🎨 '+p.paint;return}
-  $('home').hidden=false;$('homeStars').textContent='🎨 '+p.paint+'  ★ '+starsAll();
-  const yard=$('homeYard');yard.textContent='';
-  pathRoster().slice(0,8).forEach(it=>{
+function chestOpen(i){const p=PS(),c=p.ch[i];if(!c||chLeft(c)>0)return;p.ch.splice(i,1);qAdd('c',1);lootShow(CHT[c.k].n,c.k,chestRoll(c.k))}
+// ----- день: задания, подарок, рейды, лавка
+const QDEF={w:['Победи в боях',3],k:['Одолей врагов',10],c:['Открой сундуки',2],r:['Сходи в быстрый рейд',3],u:['Улучши монстрика',1],f:['Победи, не потеряв ни одного монстрика',1]};
+const CAL=[['paint',50],['gem',5],['wild',2],['paint',120],['gem',10],['wild',4],['chest','g']],CICO={paint:'🎨',gem:'✨',wild:'🌈',chest:'🎁'},RAIDS=5,FREE_T=4*3600e3;
+function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function dayCheck(){
+  const p=PS(),t=today();if(p.day&&p.day.d===t)return p.day;
+  let s=7;for(const c of t)s=(s*31+c.charCodeAt(0))>>>0;const nx=()=>{s=(Math.imul(s,1103515245)+12345)>>>0;return s>>>8},keys=Object.keys(QDEF),q=[],shop=[];
+  while(q.length<3){const k=keys[nx()%keys.length];if(!q.some(x=>x.k===k))q.push({k,n:0,got:0})}
+  for(let i=0;i<3;i++){const l=HEROES.filter(h=>RAR[h]===i);shop.push(l[nx()%l.length])}
+  p.day={d:t,q,all:0,raid:0,cal:0,shop,buy:[0,0,0]};saveState();return p.day;
+}
+function qAdd(k,n){dayCheck().q.forEach(x=>{if(x.k===k)x.n+=n})}
+function calClaim(){
+  const p=PS(),d=dayCheck();if(d.cal)return;d.cal=1;const c=CAL[(p.cal||0)%7];p.cal=(p.cal||0)+1;
+  if(c[0]==='chest')lootShow('Подарок дня',c[1],chestRoll(c[1]));else lootShow('Подарок дня',null,{[c[0]]:c[1]});
+}
+function questClaim(i){
+  const d=dayCheck(),q=d.q[i];if(q.got||q.n<QDEF[q.k][1])return;q.got=1;const L={paint:30,gem:3};let bonus=false;
+  if(d.q.every(x=>x.got)&&!d.all){d.all=1;bonus=true;const B=chestRoll('s');L.paint+=B.paint;L.wild=B.wild;L.sh=B.sh}
+  lootShow(bonus?'Все задания дня! Бонус — пенал':'Задание выполнено',bonus?'s':null,L);
+}
+// ----- вкладки: карта, монстрики, сундуки, задания, площадка
+const TABN={map:'Карта',heroes:'Монстрики',chests:'Сундуки',quests:'Задания',play:'Площадка'};
+let tabTimer=0,yardTimer=0;
+function tabSync(){
+  const meta=!$('meta').hidden,show=(meta||S.set.mode!=='path')&&state!=='battle'&&state!=='over'&&$('intro').hidden;
+  $('tabbar').hidden=!show;document.body.classList.toggle('tabs',show&&!meta);$('hubBtn').hidden=S.set.mode!=='path';
+  const cur=meta?path.tab:S.set.mode!=='path'?'play':'',p=PS(),d=dayCheck(),now=Date.now(),ms=missions();
+  const dots={chests:now>=(p.free||0)||p.ch.some(c=>chLeft(c)<=0),
+    quests:!d.cal||d.q.some(q=>!q.got&&q.n>=QDEF[q.k][1])||ms.some((q,i)=>!p.ms.got[i]&&q.n>=q.g),
+    heroes:library.some(i=>isEgg(i)&&i._ready)||HEROES.some(k=>!p.own.includes('d-'+k)&&shHave('d-'+k)>=SUMN[RAR[k]])};
+  document.querySelectorAll('#tabbar button').forEach(b=>{b.classList.toggle('dot',!!p.own.length&&!!dots[b.dataset.t]);b.setAttribute('aria-pressed',String(b.dataset.t===cur))});
+}
+function tabOpen(t){
+  if(state==='battle')return;const p=PS();
+  if(t!=='play'&&S.set.mode!=='path'){path.tab=t;$('meta').hidden=true;S.set.mode='path';applyMode();saveState();renderMenu();return}
+  if(t!=='play'&&!p.own.length){introOpen();return}
+  if(state==='over')setState('setup');
+  path.tab=t;$('intro').hidden=true;$('meta').hidden=false;tabRender();if(t==='heroes')eggCheck();
+}
+function tabRender(){
+  if($('meta').hidden){tabSync();return}
+  const p=PS(),t=path.tab||'map',isMap=t==='map';
+  $('tPaint').textContent='🎨 '+p.paint;$('tGem').textContent='✨ '+p.gem;$('tTitle').textContent=isMap?PAGES[p.pg].n:TABN[t];
+  $('pgRow').hidden=$('mapWrap').hidden=!isMap;if(!isMap)$('mapPre').hidden=true;$('tabBody').hidden=isMap;
+  clearInterval(tabTimer);clearInterval(yardTimer);
+  if(isMap)mapDraw();else{const box=$('tabBody'),y=box.scrollTop;box.textContent='';({heroes:tabHeroes,chests:tabChests,quests:tabQuests,play:tabPlay})[t](box,p);box.scrollTop=y}
+  tabSync();
+}
+function tabHeroes(box,p){
+  const yard=el('div','yard'),own=pathRoster();
+  own.slice(0,8).forEach(it=>{
     const b=el('button','mon'+(pathH(it.id).ko?' ko':''));b.type='button';b.title=it.name;const im=el('img');im.src=it.src;im.alt=it.name;b.append(im);
-    b.style.left=(8+Math.random()*74)+'%';b.style.top=(8+Math.random()*62)+'%';b.style.animationDelay=(-Math.random()*2)+'s';
-    b.onclick=()=>monOpen(it);yard.append(b);
+    b.style.left=(4+Math.random()*78)+'%';b.style.top=(4+Math.random()*40)+'%';b.style.animationDelay=(-Math.random()*2)+'s';b.onclick=()=>monOpen(it);yard.append(b);
   });
-  clearInterval(homeTimer);homeTimer=setInterval(()=>{
-    if($('home').hidden){clearInterval(homeTimer);return}
-    yard.querySelectorAll('.mon:not(.ko)').forEach(b=>{if(Math.random()<.45){const x=8+Math.random()*74;b.classList.toggle('flip',x<parseFloat(b.style.left));b.style.left=x+'%';b.style.top=(8+Math.random()*62)+'%'}});
-  },2600);
-  homeBadges();eggCheck();
+  yardTimer=setInterval(()=>{yard.querySelectorAll('.mon:not(.ko)').forEach(b=>{if(Math.random()<.45){const x=4+Math.random()*78;b.classList.toggle('flip',x<parseFloat(b.style.left));b.style.left=x+'%';b.style.top=(4+Math.random()*40)+'%'}})},2600);
+  const row=el('div','hubcards');own.forEach(it=>{const c=heroCard(it),h=pathH(it.id),s=hStar(h);if(s<6&&shCan(it,SCOST[s-1]))c.classList.add('dot');c.onclick=()=>monOpen(it);row.append(c)});
+  box.append(yard,el('p','hubnote','Тапни монстрика, чтобы улучшить. В бой можно взять'+': '+pathTeam()+' · 🌈 '+p.wild),row);
+  // гнездо
+  const slots=eggSlots(),eggs=library.filter(isEgg),need=['Найди гнездо на карте','Откроется после Ластика','Откроется на следующей странице'],nest=el('div','hubcards');
+  for(let i=0;i<3;i++){
+    const c=el('div','hcard egg');
+    if(i>=slots){c.append(el('div','eggpic lock','🔒'),el('span','',need[i]))}
+    else if(eggs[i]){
+      const it=eggs[i],pic=el('div','eggpic'+(it._ready?' ready':'')),im=el('img');im.src=it.src;im.alt='';pic.append(im);c.append(pic,el('b','',it.name));
+      if(it._ready){const b=el('button','btn mark','Вылупить');b.type='button';b.onclick=()=>eggHatch(it);c.append(el('span','','Готов вылупиться!'),b)}
+      else c.append(el('span','',!gal.api?'Греется от побед на карте. Осталось побед'+': '+Math.max(1,2-(p.wins-(it.ov.eggW||0))):it.ov.gid?'Рисунок проверяют и учат двигаться. Загляни позже.':'Нет связи: отправим рисунок при следующем заходе.'));
+    }else{const b=el('button','btn dark','Положить рисунок');b.type='button';b.onclick=()=>{$('incAsk').hidden=false};c.append(el('div','eggpic empty','＋'),b)}
+    nest.append(c);
+  }
+  box.append(el('h3','','Гнездо'),el('p','hubnote','Принеси свой рисунок: он полежит в яйце, пока его проверяют и учат двигаться, а потом вылупится монстриком.'),nest);
+  // кого ещё можно призвать
+  const lock=el('div','hubcards');
+  HEROES.forEach(k=>{
+    const id='d-'+k,it=library.find(q=>q.id===id);if(!it||p.own.includes(id))return;
+    const need2=SUMN[RAR[k]],c=heroCard(it,true);c.classList.add('locked');c.append(shBar(shHave(id),need2));
+    if(shHave(id)>=need2){c.classList.remove('locked');const b=el('button','btn mark','Призвать');b.type='button';b.onclick=()=>{p.sh[id]-=need2;p.own.push(id);saveState();tabRender();monOpen(it,'К тебе пришёл новый монстрик!')};c.append(b)}
+    lock.append(c);
+  });
+  if(lock.children.length)box.append(el('h3','','Ещё не с тобой'),el('p','hubnote','Собирай обрывки 🧩 в сундуках и рейдах, чтобы призвать монстрика.'),lock);
 }
-$('hubBtn').onclick=()=>{if(state==='battle')return;if(S.set.mode!=='path'){S.set.mode='path';applyMode();saveState();renderMenu()}else homeOpen()};
-$('plAlbum').onclick=()=>mapOpen();$('plNest').onclick=()=>{if(!eggSlots()){toast('Сначала найди гнездо на карте');return}hubOpen('inc')};
-$('plBoard').onclick=()=>hubOpen('ms');$('homeHeroes').onclick=()=>hubOpen('heroes');
-$('plYard').onclick=()=>{$('home').hidden=true;S.set.mode='free';applyMode();saveState();renderMenu()};
-$('plGate').onclick=()=>{$('home').hidden=true;S.set.mode='duel';applyMode();saveState();renderMenu()};
+function tabChests(box,p){
+  const now=Date.now(),d=dayCheck(),grid=el('div','chgrid'),pic=k=>{const i=el('img');i.src='assets/chest_'+k+'.webp';i.alt='';return i},tm=[];
+  const fr=el('div','chest'+(now>=(p.free||0)?' ready':''));fr.append(pic('w'),el('b','','Подарок'));
+  if(now>=(p.free||0)){const b=el('button','btn mark','Забрать');b.type='button';b.onclick=()=>{p.free=Date.now()+FREE_T;qAdd('c',1);lootShow('Подарок','w',chestRoll('w'))};fr.append(b)}
+  else{const s=el('span','','');tm.push([s,()=>(p.free-Date.now())/1000]);fr.append(s,el('small','','Каждые 4 часа'))}
+  box.append(el('p','hubnote','Сундуки дают за победы на карте. В них краски 🎨, блёстки ✨ и обрывки монстриков 🧩.'),fr);
+  for(let i=0;i<4;i++){
+    const c=p.ch[i],cell=el('div','chest'+(c?chLeft(c)<=0?' ready':'':' empty'));
+    if(!c)cell.append(el('span','','Пусто'),el('small','','Победи на карте'));
+    else{cell.append(pic(c.k),el('b','',CHT[c.k].n));
+      if(chLeft(c)<=0){const b=el('button','btn mark','Открыть');b.type='button';b.onclick=()=>chestOpen(i);cell.append(b)}
+      else{const s=el('span','',''),cost=Math.max(1,Math.ceil(chLeft(c)/900)),b=el('button','btn light','Сразу'+' · ✨ '+cost);b.type='button';b.disabled=p.gem<cost;
+        b.onclick=()=>{const cs=Math.max(1,Math.ceil(chLeft(c)/900));if(p.gem<cs)return;p.gem-=cs;c.at=0;chestOpen(p.ch.indexOf(c))};tm.push([s,()=>chLeft(c)]);cell.append(s,b)}}
+    grid.append(cell);
+  }
+  box.append(el('h3','','Мои сундуки'),grid);
+  const shop=el('div','chgrid'),buy=(k,cur,cost)=>{const cell=el('div','chest'),b=el('button','btn mark',(cur==='gem'?'✨ ':'🎨 ')+cost);b.type='button';b.disabled=p[cur]<cost;
+    b.onclick=()=>{if(p[cur]<cost)return;p[cur]-=cost;qAdd('c',1);lootShow(CHT[k].n,k,chestRoll(k))};cell.append(pic(k),el('b','',CHT[k].n),b);shop.append(cell)};
+  buy('s','paint',150);buy('g','gem',25);buy('e','gem',80);
+  d.shop.forEach((k,i)=>{const it=library.find(q=>q.id==='d-'+k);if(!it)return;const cur=i===2?'gem':'paint',cost=[60,120,12][i],cell=el('div','chest'),im=el('img');im.src=it.src;im.alt='';
+    const b=el('button','btn mark',d.buy[i]?'Куплено':(cur==='gem'?'✨ ':'🎨 ')+cost);b.type='button';b.disabled=!!d.buy[i]||p[cur]<cost;
+    b.onclick=()=>{if(d.buy[i]||p[cur]<cost)return;p[cur]-=cost;d.buy[i]=1;lootShow('Обрывки',null,{sh:{['d-'+k]:5}})};cell.append(im,el('b','',it.name+' · 🧩 5'),b);shop.append(cell)});
+  box.append(el('h3','','Лавка'),el('p','hubnote','Обрывки в лавке меняются каждый день.'),shop);
+  const tick=()=>{let flip=false;tm.forEach(([s,f])=>{const v=f();if(v<=0)flip=true;s.textContent='⏳ '+fmtT(v)});if(flip)tabRender()};tick();tabTimer=setInterval(()=>{if($('meta').hidden||path.tab!=='chests'){clearInterval(tabTimer);return}tick()},1000);
+}
+function tabQuests(box,p){
+  const d=dayCheck(),cal=el('div','cal'),cur=(p.cal||0)%7,done=d.cal?(cur||7):cur;
+  CAL.forEach((c,i)=>{const cell=el('div',i<done?'got':i===done&&!d.cal?'now':'');cell.append(el('em','',CICO[c[0]]),el('span','',c[0]==='chest'?CHT[c[1]].n:'+'+c[1]));cal.append(cell)});
+  box.append(el('h3','','Подарок дня'),cal);
+  if(!d.cal){const b=el('button','btn mark','Забрать подарок');b.type='button';b.style.margin='0';b.onclick=calClaim;box.append(b)}else box.append(el('p','hubnote','Сегодняшний подарок забран. Завтра будет следующий.'));
+  const list=el('div','tower');
+  d.q.forEach((q,i)=>{const g=QDEF[q.k][1],row=el('div','floor'+(q.got?' done':q.n>=g?' cur':''));row.append(el('b','',q.got?'✓':'★'),el('span','',QDEF[q.k][0]+': '+Math.min(q.n,g)+' / '+g));
+    if(!q.got&&q.n>=g){const b=el('button','btn mark','Забрать');b.type='button';b.onclick=()=>questClaim(i);row.append(b)}else row.append(el('i','','🎨 30 · ✨ 3'));list.append(row)});
+  box.append(el('h3','','Задания дня'),el('p','hubnote','Выполни все три — получишь пенал с обрывками. Быстрых рейдов сегодня'+': '+(RAIDS-d.raid)+' / '+RAIDS),list);
+  const big=el('div','tower'),got=p.ms.got;
+  missions().forEach((q,i)=>{const row=el('div','floor'+(got[i]?' done':q.n>=q.g?' cur':''));row.append(el('b','',got[i]?'✓':'★'),el('span','',q.t+': '+Math.min(q.n,q.g)+' / '+q.g));
+    if(!got[i]&&q.n>=q.g){const b=el('button','btn mark','Забрать');b.type='button';b.onclick=()=>missionClaim(i);row.append(b)}else row.append(el('i','','🎨 25 · ✨ 2'));big.append(row)});
+  box.append(el('h3','','Большие задания'),el('p','hubnote','За них дают краски, блёстки и опыт всем монстрикам. Выполнишь все три — появятся новые.'),big);
+}
+function tabPlay(box){
+  const m=el('div','modes'),add=(t,s,fn)=>{const b=el('button');b.type='button';b.append(el('b','',t),el('small','',s));b.onclick=fn;m.append(b)},go=v=>()=>{S.set.mode=v;$('meta').hidden=true;applyMode();saveState();renderMenu();tabSync()};
+  add('Свободный бой','Ставь на лист кого угодно и смотри, кто победит.',go('free'));add('На двоих','Каждый расставляет свою половину втайне, по очереди.',go('duel'));add('Турнир','Десять боёв подряд, противники всё сильнее.',go('camp'));
+  if(!$('mGalBox').hidden)add('Галерея','Герои других игроков: возьми в набор или позови в соперники.',()=>{go('free')();$('mGal').click()});
+  box.append(el('p','hubnote','Здесь нет уровней и прокачки: просто играй с рисунками.'),m);
+}
+document.querySelectorAll('#tabbar button').forEach(b=>{b.onclick=()=>tabOpen(b.dataset.t)});
+$('tMenu').onclick=()=>$('menuBtn').click();
+function homeOpen(keep){if(S.set.mode!=='path')return;if(!PS().own.length){introOpen();return}if(keep===true){tabRender();return}tabOpen(path.tab&&path.tab!=='play'?path.tab:'map')}
+function hubOpen(tab){tabOpen(tab==='inc'||tab==='heroes'?'heroes':'quests')}
+$('hubBtn').onclick=()=>{if(state==='battle')return;tabOpen('map')};
+$('incNo').onclick=()=>{$('incAsk').hidden=true};
+$('incOk').onclick=()=>{$('incAsk').hidden=true;$('meta').hidden=true;tabSync();incub=true;$('file').click()};
 $('monOk').onclick=()=>{$('mon').hidden=true};
 // ----- сценки с диалогами
 let sceneQ=[],sceneDone=null;
@@ -919,19 +1069,22 @@ function sceneNext(){
   $('talkImg').src=it?it.src:'';$('talkWho').textContent=it?it.name:'';$('talkText').textContent=text;$('talkBox').className='talkbox'+(me||who[1]==='-'?'':' foe');sfx('pop',.02);
 }
 $('talk').onclick=sceneNext;
-// ----- карта: места открываются по мере побед
+// ----- карта: места открываются по мере побед; страниц в альбоме много
 const NICO={c:'🎁',n:'🥚'};
-function mapOpen(){
-  const p=PS();$('home').hidden=true;$('map').hidden=false;$('mapPre').hidden=true;
-  $('mapPaint').textContent='🎨 '+p.paint;$('mapStars').textContent='★ '+starsAll()+' / '+starsMax();
+function mapOpen(){tabOpen('map')}
+function mapDraw(){
+  const p=PS();NODES=pageNodes(p.pg);$('mapPre').hidden=true;
+  $('mapStars').textContent='Страница'+' '+(p.pg+1)+' / '+PAGES.length+' · ★ '+starsPage(p.pg)+' / 21';
+  $('pgPrev').disabled=p.pg<=0;$('pgNext').disabled=p.pg>=PAGES.length-1||!pageOpen(p.pg+1);
+  $('mapIn').style.backgroundImage='url(assets/map'+PAGES[p.pg].map+'.webp)';$('mapIn').style.filter=PAGES[p.pg].r?'hue-rotate('+PAGES[p.pg].r*55+'deg) saturate(.8)':'';
   const box=$('mapNodes');box.textContent='';let line='';
   NODES.forEach(n=>{
-    const done=!!p.nd[n.id],open=nodeOpen(n),near=n.need.some(i=>NODES[i].need.every(j=>p.nd[j]));
+    const done=!!p.nd[n.key],open=nodeOpen(n),near=n.need.some(i=>nodeOpen(NODES[i]));
     n.need.forEach(i=>{if(done||open)line+='<line x1="'+NODES[i].x+'" y1="'+NODES[i].y*1.5+'" x2="'+n.x+'" y2="'+n.y*1.5+'"'+(done?' class="on"':'')+'/>'});
     if(!done&&!open&&!near)return; // дальше туман
     const b=el('button','node t'+n.t+(done?' done':open?' cur':' fog'));b.type='button';b.style.left=n.x+'%';b.style.top=n.y+'%';
     if(!done&&!open)b.append(el('b','','?'));
-    else if(n.t==='b'||n.t==='boss'){const f=foeBase(n.foes[0][0]),im=el('img');if(f)im.src=f.src;im.alt='';b.append(im,el('span','',done?'★'.repeat(p.nd[n.id])+'☆'.repeat(3-p.nd[n.id]):'⚔'))}
+    else if(n.t==='b'||n.t==='boss'){const f=foeBase(n.foes[0][0]),im=el('img');if(f)im.src=f.src;im.alt='';b.append(im,el('span','',done?'★'.repeat(p.nd[n.key])+'☆'.repeat(3-p.nd[n.key]):'⚔'))}
     else if(n.t==='h'){const it=library.find(q=>q.id===n.hero),im=el('img');if(it)im.src=done?it.src:erased(it).src;im.alt='';b.append(im,el('span','',done?'✓':'!'))}
     else b.append(el('b','',done?'✓':NICO[n.t]));
     b.onclick=()=>nodeTap(n);box.append(b);
@@ -940,23 +1093,37 @@ function mapOpen(){
   if(path.news.length){const it=library.find(q=>q.id===path.news[0]);path.news=[];if(it)monOpen(it,'К тебе пришёл новый монстрик!')}
   const c=box.querySelector('.cur')||box.querySelector('.done');if(c)c.scrollIntoView({block:'center'});
 }
+function pageGo(dir){const p=PS(),k=p.pg+dir;if(k<0||k>=PAGES.length||!pageOpen(k))return;p.pg=k;path.node=0;saveState();pathLoad(false);tabRender();scene('pg'+k)}
+$('pgPrev').onclick=()=>pageGo(-1);$('pgNext').onclick=()=>pageGo(1);
 function nodeTap(n){
-  const p=PS(),done=!!p.nd[n.id];
+  const p=PS(),done=!!p.nd[n.key];
   if(!nodeOpen(n)){toast('Сюда пока не пройти: сначала расчисти дорогу');return}
-  if(n.t==='c'){if(done)return;p.nd[n.id]=1;p.paint+=n.paint;saveState();sfx('win');toast('В сундуке краски'+': 🎨 +'+n.paint);mapOpen();return}
-  if(n.t==='h'){if(done)return;scene(n.pre,()=>{p.nd[n.id]=1;if(!p.own.includes(n.hero))p.own.push(n.hero);path.news=[n.hero];saveState();mapOpen()});return}
-  if(n.t==='n'){if(!done){p.nd[n.id]=1;saveState()}scene(n.pre,()=>{mapOpen();hubOpen('inc')});return}
-  path.node=n.id;const fs=nodeFoes(n),pre=$('mapPre');pre.hidden=false;$('preTitle').textContent=T(n.name);
+  if(n.t==='c'){if(done)return;p.nd[n.key]=1;
+    if(n.chest)lootShow(CHT[n.chest].n,n.chest,chestRoll(n.chest));else{p.paint+=n.paint;saveState();sfx('win');toast('В сундуке краски'+': 🎨 +'+n.paint);tabRender()}return}
+  if(n.t==='h'){if(done)return;
+    if(p.own.includes(n.hero)){p.nd[n.key]=1;lootShow('Обрывки',null,{sh:{[n.hero]:15}});return}
+    scene(n.pre,()=>{p.nd[n.key]=1;p.own.push(n.hero);path.news=[n.hero];saveState();tabRender()});return}
+  if(n.t==='n'){if(!done){p.nd[n.key]=1;saveState()}scene(n.pre,()=>tabOpen('heroes'));return}
+  path.node=n.id;const fs=nodeFoes(n),pre=$('mapPre'),d=dayCheck(),sh=library.find(q=>q.id===nodeSh(n));pre.hidden=false;$('preTitle').textContent=nodeName(n);
   const row=$('preFoes');row.textContent='';fs.forEach(f=>{const im=el('img');im.src=f.it.src;im.alt='';if(f.sz>1)im.className='big';row.append(im)});
-  const mine=pathRoster().filter(it=>!pathH(it.id).ko).map(it=>power(myItem(it).D,1)).sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0);
-  $('preText').textContent='Сила врагов'+': '+fs.reduce((a,f)=>a+power(f.it.D,f.sz),0)+' · '+'твоя лучшая тройка'+': '+mine+' · 🎨 +'+(done?8:n.paint);
+  const mine=pathRoster().filter(it=>!pathH(it.id).ko).map(it=>power(myItem(it).D,1)).sort((a,b)=>b-a).slice(0,pathTeam()).reduce((a,b)=>a+b,0);
+  const foeP=fs.reduce((a,f)=>a+power(f.it.D,f.sz),0);
+  $('preText').textContent=(foeP>mine*1.05?'⚠ ':'')+'Сила врагов'+': '+foeP+' · '+'твоя команда'+': '+mine+' · 🎨 +'+(done?8:n.paint)+(sh?' · '+'в рейде'+' 🧩 '+sh.name:'');
+  const rb=$('preRaid');rb.hidden=!done;rb.disabled=p.nd[n.key]!==3||d.raid>=RAIDS;rb.textContent=p.nd[n.key]!==3?'Рейд: нужны 3 звезды':'Быстрый рейд'+' ('+(RAIDS-d.raid)+')';
 }
-$('preGo').onclick=()=>{const n=NODES[path.node];$('map').hidden=true;scene(n.pre,()=>{pathLoad(false);setState('setup');renderInfo();if(n.id===0&&!PS().nd[0])toast('В бою тапай по листу: клякса бьёт врагов!')})};
-$('mapHome').onclick=()=>homeOpen();
+function raidGo(){
+  const p=PS(),d=dayCheck(),n=NODES[path.node];if(!n||d.raid>=RAIDS||p.nd[n.key]!==3)return;d.raid++;qAdd('r',1);
+  const lv=Math.max(...n.foes.map(f=>f[1])),sh=nodeSh(n),L={paint:8+(lv>>1),sh:{[sh]:RAR[sh.slice(2)]===2?1:2},xp:20+5*lv},ups=[];
+  pathRoster().filter(it=>!pathH(it.id).ko).sort((a,b)=>pathH(b.id).l-pathH(a.id).l).slice(0,pathTeam()).forEach(it=>pathXp(it.id,L.xp,ups));
+  if(Math.random()<.25&&chestAdd('w'))L.chest='w';
+  lootShow('Быстрый рейд',null,L);if(ups.length)toast(ups.join(' · '));nodeTap(n);
+}
+$('preRaid').onclick=raidGo;
+$('preGo').onclick=()=>{const n=NODES[path.node];$('meta').hidden=true;tabSync();scene(n.pre,()=>{pathLoad(false);setState('setup');renderInfo();if(n.key===0&&!PS().nd[0])toast('В бою тапай по листу: клякса бьёт врагов!')})};
 // ----- вступление: Ластик стирает альбом
 let introN=0;
 const INTRO=['Жил-был альбом, полный весёлых рисунков.','Но в альбоме завёлся Ластик. Он стирает рисунки, и они становятся серыми и злыми.','Уцелел только последний лист. Собери монстриков, верни альбому цвет и прогони Ластика!'];
-function introOpen(){introN=0;['home','map','hub'].forEach(k=>{$(k).hidden=true});$('intro').hidden=false;introRender()}
+function introOpen(){introN=0;$('meta').hidden=true;$('intro').hidden=false;introRender();tabSync()}
 function introRender(){
   const p=PS(),pick=introN>=INTRO.length;if(!pick)$('introImg').src='assets/intro'+(introN+1)+'.webp';$('introPick').hidden=!pick;$('introNext').hidden=pick;$('introPic').hidden=pick;
   $('introText').textContent=pick?'Выбери первого монстрика.':INTRO[introN];
@@ -970,5 +1137,5 @@ $('mReset').onclick=()=>{
   const b=$('mReset');
   if(!resetT){b.textContent='Точно стереть весь прогресс? Нажми ещё раз';resetT=setTimeout(()=>{resetT=0;b.textContent='Начать приключение заново'},3500);return}
   clearTimeout(resetT);resetT=0;b.textContent='Начать приключение заново';
-  S.path={};path.node=0;path.news=[];saveState();$('menu').hidden=true;S.set.mode='path';applyMode();renderMenu();toast('Приключение начато заново');
+  S.path={};path.node=0;path.news=[];path.tab='map';$('meta').hidden=true;saveState();$('menu').hidden=true;S.set.mode='path';applyMode();renderMenu();toast('Приключение начато заново');
 };

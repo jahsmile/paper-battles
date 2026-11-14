@@ -388,7 +388,7 @@ function place(item,x,y,size){
   const side=sideOf(x,y),m=S.set.mode;
   if(m==='duel'&&side!==duelPhase){toast(duelPhase===0?'Сейчас ставят синие, на своей половине':'Сейчас ставят красные, на своей половине');return null}
   if((m==='camp'||m==='path')&&side!==0){toast('Это половина противника. Ставь героев на синюю');return null}
-  if(m==='path'){if(units.filter(u=>u.team===0).length>=3){toast('В команде уже трое героев');return null}const b=item.pit||item;item=pathItem(b,pathH(b.id).l);size=1}
+  if(m==='path'){if(units.filter(u=>u.team===0).length>=pathTeam()){toast('Команда уже собрана');return null}const b=item.pit||item;item=myItem(b);size=1}
   const u=makeUnit(item,x,y,side,size);units.push(u);sfx('pop',.03);return u;
 }
 const propR=q=>base*(q.kind==='rock'?1.1:q.kind==='glue'?1.8:1.4)*q.s;
@@ -484,7 +484,7 @@ cv.addEventListener('pointerup',dropU);cv.addEventListener('pointercancel',dropU
 
 /* ---------- бой ---------- */
 const fightLabel=()=>S.set.mode==='duel'&&duelPhase===0?'Синие готовы':'В бой!';
-function setState(st){state=st;document.body.dataset.state=st;$('fight').textContent=st==='battle'?'Стоп':fightLabel();$('banner').hidden=st!=='over';renderInfo()}
+function setState(st){state=st;document.body.dataset.state=st;$('fight').textContent=st==='battle'?'Стоп':fightLabel();$('banner').hidden=st!=='over';renderInfo();try{tabSync()}catch(err){}}
 let cele=null;
 function resetField(){balls=[];stains=[];fx=[];shots=[];zones=[];gq=[];ending=false;winner=-1;blotCd=0;propTick=0;cele=null}
 function restore(){units=snapshot.map(q=>{const p=fromAB(q.a,q.b),u=makeUnit(q.item,p.x,p.y,q.team,q.size);u.locked=!!q.locked;return u});resetField()}
