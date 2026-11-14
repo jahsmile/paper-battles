@@ -233,7 +233,7 @@ function hintText(){
   const m=S.set.mode;
   if(m==='duel')return duelPhase===0?'Ставят синие. Красные, не подглядывайте!':'Ставят красные. Синие, не подглядывайте!';
   if(m==='camp')return 'Уровень '+(camp.i+1)+'. Собери команду не сильнее '+camp.budget+'.';
-  if(m==='path')return 'Поставь до трёх своих героев и побеждай: они растут в уровне.';
+  if(m==='path')return path.stage===0&&!PS().st[0]?'Перетащи своего монстрика на нижнюю половину листа и жми «В бой!»':'Поставь до трёх своих монстриков на нижнюю половину и жми «В бой!»';
   return 'Перетащи героев на лист. Тапни героя, чтобы менять размер.';
 }
 function renderInfo(){
@@ -868,7 +868,7 @@ function finish(){
   saveState();
   // праздник или грусть на листе: штамп, конфетти, лучи; табличка с кнопками выезжает чуть позже
   const mine=snapshot.filter(q=>q.team===0).length,left0=alive.filter(u=>u.team===0).length;
-  cele=m==='path'?(winner===0?{kind:'win',col:'#d49a00',text:'ПОБЕДА!'}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'}):m==='camp'?(winner===0?{kind:'win',col:'#d49a00',text:camp.i>=LEVELS.length-1?'ТУРНИР ПРОЙДЕН!':'УРОВЕНЬ ПРОЙДЕН!',stars:left0>=mine*.66?3:left0>=mine*.33?2:1}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'})
+  cele=m==='path'?(winner===0?{kind:'win',col:'#d49a00',text:'ПОБЕДА!',stars:path.stars}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'}):m==='camp'?(winner===0?{kind:'win',col:'#d49a00',text:camp.i>=LEVELS.length-1?'ТУРНИР ПРОЙДЕН!':'УРОВЕНЬ ПРОЙДЕН!',stars:left0>=mine*.66?3:left0>=mine*.33?2:1}:{kind:'lose',col:'#5d6470',text:'НЕ ВЫШЛО'})
     :winner<0?{kind:'draw',col:'#8a7a3a',text:'НИЧЬЯ!'}:{kind:'win',col:TEAM_COL[winner],text:winner===0?'ПОБЕДА СИНИХ!':'ПОБЕДА КРАСНЫХ!'};
   let best=null;if(winner>=0&&(!solo()||winner===0))units.forEach(u=>{if(u.team===winner&&u.dmgDone>0&&(!best||u.dmgDone>best.dmgDone))best=u});
   cele.mvp=best?{item:best.item,team:best.team,dmg:Math.round(best.dmgDone),kills:best.kills}:null;
@@ -1260,7 +1260,7 @@ function drawOverlay(t){
   }
   if((m==='camp'||m==='path')&&state==='setup'){
     ctx.fillStyle='rgba(42,42,51,.75)';ctx.textAlign='center';ctx.font=`${fs}px Neucha,"Comic Sans MS",cursive`;
-    const tx=m==='path'?'Этаж '+(PS().rung+1):'Уровень '+(camp.i+1)+' · '+camp.name;
+    const tx=m==='path'?pathLabel():'Уровень '+(camp.i+1)+' · '+camp.name;
     if(portrait)ctx.fillText(tx,W/2,H/2-8);else{ctx.save();ctx.translate(W/2-8,H/2);ctx.rotate(-Math.PI/2);ctx.fillText(tx,0,0);ctx.restore()}
   }
   if(state==='over'&&cele)drawCele(t);
@@ -1517,7 +1517,7 @@ $('clear').onclick=()=>{
   selU=selP=null;renderInfo();
 };
 $('random').onclick=randomize;
-$('again').onclick=()=>{if(S.set.mode==='path'){pathLoad(true);setState('setup');hubOpen('tower')}else if(S.set.mode==='camp'&&camp.won){loadLevel(camp.i+1);setState('setup')}else begin()};
+$('again').onclick=()=>{if(S.set.mode==='path'){pathAfter()}else if(S.set.mode==='camp'&&camp.won){loadLevel(camp.i+1);setState('setup')}else begin()};
 $('edit').onclick=()=>{if(S.set.mode==='path')pathLoad(true);else restore();if(S.set.mode==='duel')duelPhase=0;setState('setup')};
 const sndBtn=$('snd');sndBtn.setAttribute('aria-pressed',muted?'false':'true');
 sndBtn.onclick=()=>{muted=!muted;S.set.mute=muted;sndBtn.setAttribute('aria-pressed',muted?'false':'true');saveState();if(!muted)sfx('pop')};

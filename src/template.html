@@ -128,10 +128,39 @@ body[data-state="over"] .actions{visibility:hidden}
 .overlay{position:fixed;inset:0;background:rgba(20,28,36,.72);display:flex;align-items:center;justify-content:center;padding:14px;z-index:30}
 .sheet{background:var(--paper);color:var(--pencil);border-radius:8px;padding:14px 16px;width:min(400px,100%);max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);overscroll-behavior:contain}
 #dlg,#rig{z-index:34}#tip,#share{z-index:36}
-#hubBtn{display:none;position:relative}body[data-mode="path"] #hubBtn{display:inline-block}
+#hubBtn{position:relative}
 #hubBtn.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#e2572b;border:2px solid #fff}
+.scene{position:fixed;inset:0;z-index:18;background:#fbfaf4 radial-gradient(circle at 50% 120%,#d8efc4 0 45%,transparent 46%);display:flex;flex-direction:column;overflow:hidden;color:var(--pencil)}
+.scene[hidden]{display:none}
+.scenetop{display:flex;align-items:center;gap:10px;padding:10px 12px;flex:none}.scenetop b{font-size:22px;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scenetop span{color:#d49a00;font-size:18px;flex:none}
+.places{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:4px 12px;flex:none}
+.place{font:inherit;color:inherit;background:#fff;border:2.5px solid var(--pencil);border-radius:12px 14px 11px 15px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;position:relative;min-width:0;box-shadow:2px 3px 0 rgba(42,42,51,.18)}
+.place.album{grid-column:1/-1;flex-direction:row;justify-content:center;gap:12px;background:#fff3c9;padding:8px}.place.album svg{width:88px}.place.album span{font-size:26px}
+.place svg{width:56px;height:auto;fill:none;stroke:var(--pencil);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.place span{font-size:16px;line-height:1.1}.place small{font-size:12px;color:#55555e;line-height:1.1;text-align:center}
+.place.off{opacity:.5}.place.dot::after{content:"";position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#e2572b;border:2px solid #fff}
+.yard{flex:1 1 auto;position:relative;min-height:120px;margin:6px 8px 0}
+.mon{position:absolute;width:20%;max-width:110px;aspect-ratio:1;background:none;border:0;padding:0;cursor:pointer;transition:left 2.4s linear,top 2.4s linear;animation:monHop .7s ease-in-out infinite}
+.mon img{width:100%;height:100%;object-fit:contain;display:block}.mon.flip img{transform:scaleX(-1)}
+@keyframes monHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.mappath{flex:1 1 auto;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:96px;gap:4px 6px;padding:8px 22px 12px;justify-items:center;align-items:center;background:repeating-linear-gradient(0deg,transparent 0 99px,rgba(42,42,51,.07) 99px 100px)}
+.node{font:inherit;color:inherit;width:78px;height:78px;border-radius:50%;border:3px solid var(--pencil);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;position:relative;box-shadow:2px 3px 0 rgba(42,42,51,.18)}
+.node b{font-size:26px;line-height:1}.node span{font-size:13px;color:#d49a00;letter-spacing:1px}.node i{position:absolute;top:-8px;right:-8px;font-style:normal;font-size:20px}
+.node.cur{background:#e4edfc;border-color:var(--blue);animation:monHop 1s ease-in-out infinite}.node.done{background:#eaf6df}.node.lock{opacity:.45}
+.node.boss{width:104px;height:104px;border-radius:18px;background:#fff3c9}.node.boss img{width:70px;height:54px;object-fit:contain}
+.mappre{flex:none;margin:0 10px 10px;padding:10px;border:2.5px solid var(--pencil);border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;font-size:15px}
+.mappre>b{font-size:20px}.prefoes{display:flex;gap:8px;align-items:flex-end;justify-content:center}.prefoes img{width:56px;height:50px;object-fit:contain}.prefoes img.big{width:84px;height:74px}
+.introbox{margin:auto;width:min(460px,92%);display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;font-size:20px;line-height:1.25}.introbox p{margin:0}.introbox .hubcards{width:100%}
+.intropic{position:relative;width:100%;height:170px;border:2.5px solid var(--pencil);border-radius:8px;background:#fff;display:flex;align-items:flex-end;justify-content:space-around;padding:10px;overflow:hidden}
+.intropic[hidden]{display:none}.intropic img{width:28%;height:110px;object-fit:contain;transition:filter 1s;animation:monHop .8s ease-in-out infinite}.intropic img:nth-child(2){animation-delay:-.3s}
+.intropic i{position:absolute;top:30%;left:-30%;width:26%;height:38px;border-radius:8px;background:#f6a9b8;border:2.5px solid var(--pencil);transform:rotate(-18deg)}
+.intropic.s1 img:nth-child(-n+2){filter:grayscale(1) brightness(1.15);animation:none}.intropic.s1 i{animation:erase 2.2s ease-in-out infinite alternate}
+.intropic.s2 img{filter:none}.intropic.s2{background:#eaf6df}
+@keyframes erase{from{left:-10%}to{left:62%}}
+.moncard{display:flex;flex-direction:column;gap:8px;align-items:center}.moncard .hcard{width:min(220px,100%)}.moncard .hcard>img{height:110px}
+@media (orientation:landscape){.places{grid-template-columns:repeat(5,1fr)}.place.album{grid-column:auto;flex-direction:column;gap:1px}.place.album svg{width:56px}.place.album span{font-size:16px}.mappath{grid-auto-rows:84px}}
+@media (prefers-reduced-motion:reduce){.mon,.node.cur,.intropic img,.intropic i{animation:none}.mon{transition:none}}
 #incAsk{z-index:55}.hubsheet{width:min(560px,100%);max-height:94%;display:flex;flex-direction:column;gap:8px}
-#hubTabs{display:grid;grid-template-columns:repeat(4,1fr)}#hubTabs button{font-size:14px;padding:8px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #hubBody{overflow-y:auto;min-height:150px;display:flex;flex-direction:column;gap:8px}.hubnote{margin:0;font-size:15px;color:#55555e}
 .tower{display:flex;flex-direction:column;gap:5px}
 .floor{display:flex;align-items:center;gap:8px;padding:7px 9px;border:2px solid #b9b6ab;border-radius:8px;background:#fff;font-size:15px;line-height:1.15}
@@ -140,7 +169,7 @@ body[data-state="over"] .actions{visibility:hidden}
 .floor.cur{border-color:var(--blue);background:#e4edfc}.floor.cur>b{background:var(--blue);color:#fff}.floor.done{opacity:.6}.floor .btn{flex:none;font-size:14px;padding:5px 9px}
 .hubcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
 .hcard{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 5px;border:2px solid #b9b6ab;border-radius:8px;background:#fff;font-size:14px;line-height:1.15;text-align:center;min-width:0}
-.hcard>img{width:100%;height:72px;object-fit:contain}.hcard small{color:#55555e}.hcard .btn{font-size:14px;padding:5px 9px;max-width:100%}
+.hcard>img{width:100%;height:72px;object-fit:contain}.hcard small{color:#55555e}.hcard .btn{font-size:14px;padding:5px 7px;max-width:100%;white-space:normal;line-height:1.1}
 .xpbar{width:100%;height:8px;border-radius:4px;background:#ecebe4;overflow:hidden}.xpbar i{display:block;height:100%;background:#d49a00}
 .eggpic{width:70px;height:88px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#fff6dc;border:3px solid #d9c9a0;display:grid;place-items:center;font-size:26px;color:#b9a777;overflow:hidden}
 .eggpic img{width:70%;height:70%;object-fit:contain;opacity:.28;filter:grayscale(1)}.eggpic.lock{background:#ecebe4;border-color:#b9b6ab}.eggpic.empty{border-style:dashed;background:#fff}
@@ -253,7 +282,7 @@ body[data-state="over"] .actions{visibility:hidden}
 <header>
   <h1>Бумажные <span>бои</span></h1>
   <div class="tools">
-    <button class="btn sm mark" id="hubBtn" type="button">Путь</button>
+    <button class="btn sm mark" id="hubBtn" type="button">Домой</button>
     <button class="btn sm" id="menuBtn" type="button">Меню</button>
     <button class="snd" id="snd" type="button" aria-pressed="true" aria-label="Звук" title="Звук">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path class="wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg>
@@ -516,15 +545,39 @@ body[data-state="over"] .actions{visibility:hidden}
   </div>
 </div>
 
+<div class="scene" id="home" hidden>
+  <div class="scenetop"><b>Мой лист</b><span id="homeStars"></span><button type="button" class="btn sm light" id="homeHeroes">Монстрики</button></div>
+  <div class="places">
+    <button type="button" class="place album" id="plAlbum"><svg viewBox="0 0 80 64"><path d="M6 12q17-8 34 2q17-10 34-2v42q-17-8-34 2q-17-10-34-2z" fill="#fff"/><path d="M40 14v42" /><path d="M13 24q10-4 20 0M13 33q10-4 20 0M47 24q10-4 20 0M47 33q10-4 20 0" stroke-width="2"/></svg><span>Альбом</span><small>Приключение</small></button>
+    <button type="button" class="place" id="plNest"><svg viewBox="0 0 80 64"><ellipse cx="40" cy="30" rx="15" ry="20" fill="#fff6dc"/><path d="M12 42q28 22 56 0q-4 16-28 16q-24 0-28-16z" fill="#d9b98a"/><path d="M16 46l10 6M30 48l8 8M48 56l8-8M56 52l8-6" stroke-width="2"/></svg><span>Гнездо</span><small>Свой рисунок</small></button>
+    <button type="button" class="place" id="plBoard"><svg viewBox="0 0 80 64"><rect x="12" y="8" width="56" height="36" rx="3" fill="#f3e2b8"/><path d="M24 44v16M56 44v16"/><rect x="18" y="14" width="18" height="12" fill="#fff" stroke-width="2"/><rect x="42" y="18" width="20" height="14" fill="#fff" stroke-width="2"/></svg><span>Доска</span><small>Задания</small></button>
+    <button type="button" class="place" id="plYard"><svg viewBox="0 0 80 64"><circle cx="40" cy="32" r="22" fill="#fff"/><circle cx="40" cy="32" r="13" fill="#ffd9d0"/><circle cx="40" cy="32" r="5" fill="#e2572b"/><path d="M40 32l22-20M56 12h7v7" stroke-width="3"/></svg><span>Площадка</span><small>Свободный бой</small></button>
+    <button type="button" class="place" id="plGate"><svg viewBox="0 0 80 64"><path d="M14 60V30q0-22 26-22q26 0 26 22v30" fill="#e4edfc"/><path d="M28 60V34q0-10 12-10q12 0 12 10v26" fill="#fff"/><path d="M40 24v36" stroke-width="2"/></svg><span>Ворота</span><small>Бой на двоих</small></button>
+  </div>
+  <div class="yard" id="homeYard"></div>
+</div>
+<div class="scene" id="map" hidden>
+  <div class="scenetop"><b>Страница 1. Опушка</b><span id="mapStars"></span><button type="button" class="btn sm light" id="mapHome">Домой</button></div>
+  <div class="mappath" id="mapPath"></div>
+  <div class="mappre" id="mapPre" hidden><b id="preTitle"></b><div class="prefoes" id="preFoes"></div><span id="preText"></span><button type="button" class="btn dark" id="preGo">В бой</button></div>
+</div>
+<div class="scene" id="intro" hidden>
+  <div class="introbox">
+    <div class="intropic s0" id="introPic"><img src="assets/king_full.webp" alt=""><img src="assets/dino_full.webp" alt=""><img src="assets/witch_full.webp" alt=""><i></i></div>
+    <p id="introText"></p>
+    <div class="hubcards" id="introPick" hidden></div>
+    <button type="button" class="btn dark" id="introNext">Дальше</button>
+  </div>
+</div>
 <div class="overlay" id="hub" hidden>
   <div class="sheet hubsheet">
-    <h2>Путь героя</h2>
-    <div class="seg" id="hubTabs" role="group" aria-label="Путь героя">
-      <button type="button" data-v="tower">Башня</button><button type="button" data-v="heroes">Герои</button><button type="button" data-v="inc">Инкубатор</button><button type="button" data-v="ms">Миссии</button>
-    </div>
+    <h2 id="hubTitle"></h2>
     <div id="hubBody"></div>
-    <div class="row"><button type="button" class="btn dark" id="hubGo"></button></div>
+    <div class="row"><button type="button" class="btn dark" id="hubGo">Закрыть</button></div>
   </div>
+</div>
+<div class="overlay" id="mon" hidden>
+  <div class="sheet tipsheet"><div id="monCard" class="moncard"></div><div class="row"><button type="button" class="btn dark" id="monOk">Понятно</button></div></div>
 </div>
 <div class="overlay" id="incAsk" hidden>
   <div class="sheet tipsheet">
