@@ -686,19 +686,19 @@ const STARTERS=['d-king','d-dino','d-golem'];
 const FALL={blot:'black',pin:'teeth',clip:'blade',sharp:'saw',scis:'rider',glue:'purple',eraser:'fort'}; // пока нет рисунка врага — стёртый герой
 // t: b — бой, c — сундук с красками, h — герой в беде, n — гнездо, boss — логово. x,y — место на карте в процентах
 const NODES=[
-  {id:0,t:'b',x:50,y:91,need:[],name:'Клякса-дозорный',foes:[['blot',1,.55]],paint:20,pre:'n0'},
-  {id:1,t:'c',x:20,y:84,need:[0],paint:30},
-  {id:2,t:'b',x:74,y:78,need:[0],name:'Колючая тропа',foes:[['pin',1,.7],['pin',1,.6]],paint:25},
-  {id:3,t:'h',x:88,y:65,need:[2],hero:'d-duo',pre:'duo'},
-  {id:4,t:'b',x:46,y:66,need:[2],name:'Мост через кляксу',foes:[['clip',1,1],['blot',1,1]],paint:30},
-  {id:5,t:'n',x:18,y:60,need:[4],pre:'nest'},
-  {id:6,t:'b',x:66,y:51,need:[4],name:'Стружечный лес',foes:[['sharp',2,1],['pin',2,.9],['pin',1,.9]],paint:35},
-  {id:7,t:'c',x:88,y:42,need:[6],paint:50},
-  {id:8,t:'b',x:36,y:41,need:[6],name:'Ножничный перевал',foes:[['scis',2,1.1],['clip',2,1],['blot',2,1]],paint:40},
-  {id:9,t:'h',x:14,y:44,need:[6],hero:'d-blade',pre:'blade'},
-  {id:10,t:'b',x:60,y:28,need:[8],name:'Клеевое болото',foes:[['glue',4,1.1],['sharp',4,1],['scis',3,1.1]],paint:45},
-  {id:11,t:'c',x:86,y:20,need:[10],paint:70},
-  {id:12,t:'boss',x:40,y:11,need:[10],name:'Логово Ластика',foes:[['eraser',4,1.1,1.5],['blot',4,1],['pin',4,1]],paint:100,pre:'boss',post:'end',hero:'d-fort'}];
+  {id:0,t:'b',x:52,y:83,need:[],name:'Клякса-дозорный',foes:[['blot',1,.8]],paint:20,pre:'n0'},
+  {id:1,t:'c',x:14,y:85,need:[0],paint:30},
+  {id:2,t:'b',x:72,y:75,need:[0],name:'Колючая тропа',foes:[['pin',1,.85],['pin',1,.85],['blot',1,.7]],paint:25},
+  {id:3,t:'h',x:89,y:69,need:[2],hero:'d-duo',pre:'duo'},
+  {id:4,t:'b',x:30,y:60,need:[2],name:'Мост через кляксу',foes:[['clip',2,1.1],['blot',2,1],['pin',1,1]],paint:30},
+  {id:5,t:'n',x:11,y:49,need:[4],pre:'nest'},
+  {id:6,t:'b',x:52,y:46,need:[4],name:'Стружечный лес',foes:[['sharp',3,1.1],['pin',2,1.1],['pin',2,1.1],['blot',2,1]],paint:35},
+  {id:7,t:'c',x:89,y:46,need:[6],paint:50},
+  {id:8,t:'b',x:47,y:31,need:[6],name:'Ножничный перевал',foes:[['scis',3,1.2],['scis',3,1],['clip',3,1.1],['blot',3,1]],paint:40},
+  {id:9,t:'h',x:72,y:60,need:[6],hero:'d-blade',pre:'blade'},
+  {id:10,t:'b',x:60,y:19,need:[8],name:'Клеевое болото',foes:[['glue',4,1.2],['glue',4,1],['sharp',4,1.2],['scis',4,1.1]],paint:45},
+  {id:11,t:'c',x:89,y:17,need:[10],paint:70},
+  {id:12,t:'boss',x:47,y:7,need:[10],name:'Логово Ластика',foes:[['eraser',4,1.1,1.5],['blot',4,1.1],['scis',4,1]],paint:100,pre:'boss',post:'end',hero:'d-fort'}];
 // сценки: кто говорит и что. me — первый монстрик игрока
 const SCENES={
   n0:[['blot','Стой! Этот лист теперь принадлежит Ластику!'],['me','А вот это мы сейчас проверим!']],
@@ -740,8 +740,17 @@ function erased(it){ // стёртый рисунок: тот же герой, �
     return it._er=Object.assign({},it,{base:Object.assign({},it.base,{img:c}),src:c.toDataURL('image/png'),er:1,ov:null});
   }catch(err){return it}
 }
+// фон боя в приключении: у каждого места свой рисунок
+const BGS={0:'meadow',1:'meadow',2:'thorns',3:'thorns',4:'river',5:'river',6:'forest',7:'forest',8:'pass',9:'forest',10:'swamp',11:'swamp',12:'lair'},bgImg={};
+function pathBg(g){
+  const k=BGS[path.node];if(!k)return true;let im=bgImg[k];
+  if(!im){im=bgImg[k]=new Image();im.onload=()=>{if(bg&&S.set.mode==='path')makePaper()};im.onerror=()=>{im.bad=1};im.src='assets/bg_'+k+'.webp'}
+  if(im.bad)return false;if(!(im.complete&&im.naturalWidth))return true;
+  const rot=(im.width>im.height)!==(W>H),iw=rot?im.height:im.width,ih=rot?im.width:im.height,sc=Math.max(W/iw,H/ih);
+  g.save();g.translate(W/2,H/2);if(rot)g.rotate(Math.PI/2);g.globalAlpha=.8;g.drawImage(im,-im.width*sc/2,-im.height*sc/2,im.width*sc,im.height*sc);g.restore();return true;
+}
 function foeBase(k){const own=library.find(q=>q.id==='d-'+k);if(own)return own;const f=library.find(q=>q.id==='d-'+FALL[k]);return f?erased(f):null}
-function nodeFoes(n){return n.foes.map(f=>{const b=foeBase(f[0]);return b?{it:pathItem(b,f[1],f[2]),sz:f[3]||1}:null}).filter(Boolean)}
+function nodeFoes(n){return n.foes.map(f=>{const b=foeBase(f[0]);return b?{it:pathItem(b,f[1],f[2]*(n.t==="boss"?1.08:1.15)),sz:f[3]||1}:null}).filter(Boolean)}
 function pathXp(id,gain,ups){
   const h=pathH(id),it=library.find(i=>i.id===id);h.x+=gain;
   while(h.x>=pathNeed(h.l)){h.x-=pathNeed(h.l);h.l++;if(ups)ups.push((it?it.name:'')+' — '+'уровень'+' '+h.l+(h.l===2?' ('+'открыт суперудар'+')':h.l===3?' ('+'вторая атака'+')':h.l===6?' ('+'третья атака'+')':''))}
@@ -752,7 +761,7 @@ function pathLoad(keep){
   mine.forEach(q=>{const b=q.item.pit||q.item,pos=fromAB(q.a,q.b);if(pathOwns(b)&&!pathH(b.id).ko)units.push(makeUnit(myItem(b),pos.x,pos.y,0,1))});
   if(p.own.length&&n.foes){const fs=nodeFoes(n);path.foeLvl=Math.max(...n.foes.map(f=>f[1]));
     fs.forEach((f,k)=>{const pos=fromSide(1,.5+.2*(k%2),(k+1)/(fs.length+1)),u=makeUnit(f.it,pos.x,pos.y+base,1,f.sz);u.locked=true;units.push(u)})}
-  $('fight').textContent=fightLabel();renderLib();
+  $('fight').textContent=fightLabel();renderLib();if(bg)makePaper();
 }
 function pathFinish(won){
   const p=PS(),n=NODES[path.node],mineQ=snapshot.filter(q=>q.team===0),ids=[...new Set(mineQ.map(q=>(q.item.pit||q.item).id))],gain=won?20+8*path.foeLvl:8,ups=[],extra=[];
@@ -949,9 +958,17 @@ let introN=0;
 const INTRO=['Жил-был альбом, полный весёлых рисунков.','Но в альбоме завёлся Ластик. Он стирает рисунки, и они становятся серыми и злыми.','Уцелел только последний лист. Собери монстриков, верни альбому цвет и прогони Ластика!'];
 function introOpen(){introN=0;['home','map','hub'].forEach(k=>{$(k).hidden=true});$('intro').hidden=false;introRender()}
 function introRender(){
-  const p=PS(),pick=introN>=INTRO.length;$('introPic').className='intropic s'+introN;$('introPick').hidden=!pick;$('introNext').hidden=pick;$('introPic').hidden=pick;
+  const p=PS(),pick=introN>=INTRO.length;if(!pick)$('introImg').src='assets/intro'+(introN+1)+'.webp';$('introPick').hidden=!pick;$('introNext').hidden=pick;$('introPic').hidden=pick;
   $('introText').textContent=pick?'Выбери первого монстрика.':INTRO[introN];
   if(pick){const row=$('introPick');row.textContent='';STARTERS.forEach(id=>{const it=library.find(i=>i.id===id);if(!it)return;const c=heroCard(it,true),b=el('button','btn dark','Выбрать');b.type='button';
     b.onclick=()=>{p.own.push(id);saveState();$('intro').hidden=true;mapOpen()};c.append(b);row.append(c)})}
 }
 $('introNext').onclick=()=>{introN++;introRender()};
+// ----- начать приключение заново
+let resetT=0;
+$('mReset').onclick=()=>{
+  const b=$('mReset');
+  if(!resetT){b.textContent='Точно стереть весь прогресс? Нажми ещё раз';resetT=setTimeout(()=>{resetT=0;b.textContent='Начать приключение заново'},3500);return}
+  clearTimeout(resetT);resetT=0;b.textContent='Начать приключение заново';
+  S.path={};path.node=0;path.news=[];saveState();$('menu').hidden=true;S.set.mode='path';applyMode();renderMenu();toast('Приключение начато заново');
+};

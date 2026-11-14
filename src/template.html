@@ -162,15 +162,12 @@ body[data-state="over"] .actions{visibility:hidden}
 .mappre{flex:none;margin:0 10px 10px;padding:10px;border:2.5px solid var(--pencil);border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;font-size:15px}
 .mappre>b{font-size:20px}.prefoes{display:flex;gap:8px;align-items:flex-end;justify-content:center}.prefoes img{width:56px;height:50px;object-fit:contain}.prefoes img.big{width:84px;height:74px}
 .introbox{margin:auto;width:min(460px,92%);display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;font-size:20px;line-height:1.25}.introbox p{margin:0}.introbox .hubcards{width:100%}
-.intropic{position:relative;width:100%;height:170px;border:2.5px solid var(--pencil);border-radius:8px;background:#fff;display:flex;align-items:flex-end;justify-content:space-around;padding:10px;overflow:hidden}
-.intropic[hidden]{display:none}.intropic img{width:28%;height:110px;object-fit:contain;transition:filter 1s;animation:monHop .8s ease-in-out infinite}.intropic img:nth-child(2){animation-delay:-.3s}
-.intropic i{position:absolute;top:30%;left:-30%;width:26%;height:38px;border-radius:8px;background:#f6a9b8;border:2.5px solid var(--pencil);transform:rotate(-18deg)}
-.intropic.s1 img:nth-child(-n+2){filter:grayscale(1) brightness(1.15);animation:none}.intropic.s1 i{animation:erase 2.2s ease-in-out infinite alternate}
-.intropic.s2 img{filter:none}.intropic.s2{background:#eaf6df}
+.intropic{width:100%;max-width:340px;margin:0 auto;aspect-ratio:1;border:2.5px solid var(--pencil);border-radius:8px;background:#fff;overflow:hidden;transform:rotate(-1deg)}
+.intropic[hidden]{display:none}.intropic img{width:100%;height:100%;object-fit:cover;display:block}
 @keyframes erase{from{left:-10%}to{left:62%}}
 .moncard{display:flex;flex-direction:column;gap:8px;align-items:center}.moncard .hcard{width:min(220px,100%)}.moncard .hcard>img{height:110px}
 @media (orientation:landscape){.places{grid-template-columns:repeat(5,1fr)}.place.album{grid-column:auto;flex-direction:column;gap:1px}.place.album svg{width:56px}.place.album span{font-size:16px}.mappath{grid-auto-rows:84px}}
-@media (prefers-reduced-motion:reduce){.mon,.node.cur,.intropic img,.intropic i{animation:none}.mon{transition:none}}
+@media (prefers-reduced-motion:reduce){.mon,.node.cur{animation:none}.mon{transition:none}}
 .btn{border-radius:14px 9px 13px 8px/9px 13px 8px 14px}.sheet{border-radius:16px 22px 14px 24px/20px 14px 24px 16px;border:3px solid var(--pencil)}.hcard,.floor{border-radius:12px 9px 13px 8px/9px 13px 8px 12px;border-color:var(--pencil)}
 #incAsk{z-index:55}.hubsheet{width:min(560px,100%);max-height:94%;display:flex;flex-direction:column;gap:8px}
 #hubBody{overflow-y:auto;min-height:150px;display:flex;flex-direction:column;gap:8px}.hubnote{margin:0;font-size:15px;color:#55555e}
@@ -547,6 +544,7 @@ body[data-state="over"] .actions{visibility:hidden}
       <div><label for="mCode">Получить героя по коду от друга</label>
         <div class="lrow"><input type="text" id="mCode" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="ABC123"><button type="button" class="btn light" id="mGet">Получить</button></div>
       </div>
+      <button type="button" class="btn light" id="mReset">Начать приключение заново</button>
       <div id="mGalBox" hidden><button type="button" class="btn light" id="mGal">Галерея</button></div>
       <p class="note" id="syncText"></p>
       <div class="row">
@@ -576,7 +574,7 @@ body[data-state="over"] .actions{visibility:hidden}
 <div class="talk" id="talk" hidden><div class="talkbox" id="talkBox"><img id="talkImg" alt=""><div><b id="talkWho"></b><p id="talkText"></p><small>▼</small></div></div></div>
 <div class="scene" id="intro" hidden>
   <div class="introbox">
-    <div class="intropic s0" id="introPic"><img src="assets/king_full.webp" alt=""><img src="assets/dino_full.webp" alt=""><img src="assets/witch_full.webp" alt=""><i></i></div>
+    <div class="intropic" id="introPic"><img id="introImg" src="assets/intro1.webp" alt=""></div>
     <p id="introText"></p>
     <div class="hubcards" id="introPick" hidden></div>
     <button type="button" class="btn dark" id="introNext">Дальше</button>

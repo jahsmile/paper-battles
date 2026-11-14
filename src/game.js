@@ -435,7 +435,7 @@ function makePaper(){
     g.stroke();
     if(paper==='lined'){g.strokeStyle='rgba(226,70,58,.55)';g.beginPath();g.moveTo(W-cell*1.6,0);g.lineTo(W-cell*1.6,H);g.stroke()}
   }
-  if(!preview)drawArena(g);
+  if(!preview){if(!(S.set.mode==='path'&&pathBg(g)))drawArena(g)}
   const tint=(c,x0,y0,x1,y1)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);gr.addColorStop(0,c+'24');gr.addColorStop(1,c+'00');g.fillStyle=gr;g.fillRect(0,0,W,H)};
   if(portrait){tint(BLUE,0,H,0,H*.55);tint(RED,0,0,0,H*.45)}else{tint(BLUE,0,0,W*.45,0);tint(RED,W,0,W*.55,0)}
   g.strokeStyle='rgba(42,42,51,.45)';g.lineWidth=2;g.setLineDash([10,9]);g.lineCap='round';g.beginPath();
@@ -976,7 +976,7 @@ function drawUnit(u,t){
   if(u.dead){ctx.translate(0,-u.h/2);ctx.rotate((1-k)*4);ctx.scale(k,k);ctx.translate(0,u.h/2)}
   ctx.rotate(rot*u.face);ctx.scale(fl*sq*sc*sxm,sy*sc/sq);ctx.translate(-D.w/2,-D.h);
   for(const P of D.parts)if(P.z==='back')drawPart(P,u,t);
-  ctx.drawImage(img,0,0);
+  ctx.drawImage(img,0,0,D.w,D.h); // размер задаём явно: на части телефонов картинка сообщает другой собственный размер
   for(const P of D.parts)if(P.z!=='back')drawPart(P,u,t);
   ctx.restore();
   const sawA=D.atks.find(a=>a.k==='saw');
