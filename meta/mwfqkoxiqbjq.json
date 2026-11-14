@@ -7,11 +7,12 @@
   "en": "Four-eyed swamp monster"
  },
  "note": {
-  "ru": "Четыре жёлтых глаза, огромная чёрная пасть и длинные руки с растопыренными пальцами. Хватает когтями и плюётся из пасти.",
-  "en": "Four yellow eyes, a huge black mouth and long arms with spread fingers. Grabs with claws and spits from its mouth."
+  "ru": "Четыре жёлтых глаза, огромная чёрная пасть и длинные руки с растопыренными пальцами. Хватает врагов, поднимает над головой и швыряет об лист.",
+  "en": "Four yellow eyes, a huge black mouth and long arms with spread fingers. Grabs enemies, lifts them overhead and slams them down."
  },
  "chr": "scary",
  "atks": [
+  "grab",
   "claw",
   "plasma"
  ],
