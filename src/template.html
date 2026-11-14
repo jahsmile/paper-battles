@@ -128,6 +128,27 @@ body[data-state="over"] .actions{visibility:hidden}
 .overlay{position:fixed;inset:0;background:rgba(20,28,36,.72);display:flex;align-items:center;justify-content:center;padding:14px;z-index:30}
 .sheet{background:var(--paper);color:var(--pencil);border-radius:8px;padding:14px 16px;width:min(400px,100%);max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);overscroll-behavior:contain}
 #dlg,#rig{z-index:34}#tip,#share{z-index:36}
+#hubBtn{display:none;position:relative}body[data-mode="path"] #hubBtn{display:inline-block}
+#hubBtn.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#e2572b;border:2px solid #fff}
+#incAsk{z-index:55}.hubsheet{width:min(560px,100%);max-height:94%;display:flex;flex-direction:column;gap:8px}
+#hubTabs{display:grid;grid-template-columns:repeat(4,1fr)}#hubTabs button{font-size:14px;padding:8px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#hubBody{overflow-y:auto;min-height:150px;display:flex;flex-direction:column;gap:8px}.hubnote{margin:0;font-size:15px;color:#55555e}
+.tower{display:flex;flex-direction:column;gap:5px}
+.floor{display:flex;align-items:center;gap:8px;padding:7px 9px;border:2px solid #b9b6ab;border-radius:8px;background:#fff;font-size:15px;line-height:1.15}
+.floor>b{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#ecebe4}
+.floor>span{flex:1 1 auto;min-width:0}.floor>i{font-style:normal;flex:none;font-size:14px;color:#8a5a00}
+.floor.cur{border-color:var(--blue);background:#e4edfc}.floor.cur>b{background:var(--blue);color:#fff}.floor.done{opacity:.6}.floor .btn{flex:none;font-size:14px;padding:5px 9px}
+.hubcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.hcard{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 5px;border:2px solid #b9b6ab;border-radius:8px;background:#fff;font-size:14px;line-height:1.15;text-align:center;min-width:0}
+.hcard>img{width:100%;height:72px;object-fit:contain}.hcard small{color:#55555e}.hcard .btn{font-size:14px;padding:5px 9px;max-width:100%}
+.xpbar{width:100%;height:8px;border-radius:4px;background:#ecebe4;overflow:hidden}.xpbar i{display:block;height:100%;background:#d49a00}
+.eggpic{width:70px;height:88px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#fff6dc;border:3px solid #d9c9a0;display:grid;place-items:center;font-size:26px;color:#b9a777;overflow:hidden}
+.eggpic img{width:70%;height:70%;object-fit:contain;opacity:.28;filter:grayscale(1)}.eggpic.lock{background:#ecebe4;border-color:#b9b6ab}.eggpic.empty{border-style:dashed;background:#fff}
+.eggpic:not(.lock):not(.empty){animation:eggRock 2.4s ease-in-out infinite}.eggpic.ready{animation:eggRock .5s ease-in-out infinite;border-color:#d49a00}
+@keyframes eggRock{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.cardfx b{display:none}.cardfx.egg b{display:block;position:absolute;left:50%;top:50%;width:120px;height:150px;margin:-75px 0 0 -60px;border-radius:50%/60% 60% 40% 40%;background:#fff6dc;border:3px solid #d9c9a0;animation:eggGone 2.6s both}
+@keyframes eggGone{0%{transform:none;opacity:1}10%,30%,50%{transform:rotate(-7deg)}20%,40%,60%{transform:rotate(7deg)}64%{opacity:1;transform:scale(1.05)}70%,100%{opacity:0;transform:scale(1.6)}}
+@media (prefers-reduced-motion:reduce){.eggpic,.cardfx.egg b{animation:none!important}.cardfx.egg b{display:none}}
 #card{z-index:60}.cardsheet{text-align:center;align-items:center}.cardsheet .cap{font-size:17px}
 .cardfx{position:relative;width:170px;height:150px;margin:2px auto;display:grid;place-items:center}
 .cardfx img{max-width:150px;max-height:140px;object-fit:contain;position:relative}
@@ -232,6 +253,7 @@ body[data-state="over"] .actions{visibility:hidden}
 <header>
   <h1>Бумажные <span>бои</span></h1>
   <div class="tools">
+    <button class="btn sm mark" id="hubBtn" type="button">Путь</button>
     <button class="btn sm" id="menuBtn" type="button">Меню</button>
     <button class="snd" id="snd" type="button" aria-pressed="true" aria-label="Звук" title="Звук">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path class="wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg>
@@ -494,10 +516,28 @@ body[data-state="over"] .actions{visibility:hidden}
   </div>
 </div>
 
+<div class="overlay" id="hub" hidden>
+  <div class="sheet hubsheet">
+    <h2>Путь героя</h2>
+    <div class="seg" id="hubTabs" role="group" aria-label="Путь героя">
+      <button type="button" data-v="tower">Башня</button><button type="button" data-v="heroes">Герои</button><button type="button" data-v="inc">Инкубатор</button><button type="button" data-v="ms">Миссии</button>
+    </div>
+    <div id="hubBody"></div>
+    <div class="row"><button type="button" class="btn dark" id="hubGo"></button></div>
+  </div>
+</div>
+<div class="overlay" id="incAsk" hidden>
+  <div class="sheet tipsheet">
+    <h2>Принести рисунок</h2>
+    <p class="note">Сфотографируй свой рисунок. Он отправится на проверку, а потом будет встречаться и другим игрокам.</p>
+    <p class="note"><b>Отправляй только рисунки. Фотографии людей отправлять нельзя.</b></p>
+    <div class="row"><button type="button" class="btn light" id="incNo">Отмена</button><button type="button" class="btn dark" id="incOk">Выбрать рисунок</button></div>
+  </div>
+</div>
 <div class="overlay" id="card" hidden>
   <div class="sheet tipsheet cardsheet">
     <p class="cap" id="cardCap"></p>
-    <div class="cardfx" id="cardFx"><i></i><img id="cardImg" alt=""></div>
+    <div class="cardfx" id="cardFx"><i></i><img id="cardImg" alt=""><b></b></div>
     <div class="cardbody" id="cardBody">
       <h2 id="cardName"></h2>
       <p id="cardKind"></p>

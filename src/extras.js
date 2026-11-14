@@ -95,7 +95,7 @@ let lastMode=S.set.mode;
 function applyMode(init){
   const m=S.set.mode;document.body.dataset.mode=m;duelPhase=0;selU=selP=null;
   if(m==='camp')loadLevel(S.camp.level);
-  else if(m==='path')pathLoad(false);
+  else if(m==='path'){pathLoad(false);if(!init||!PS().own.length)setTimeout(()=>hubOpen('tower'),init?400:0)}
   else{units.forEach(u=>{u.locked=false});if(!init&&(lastMode==='camp'||lastMode==='path')){units=[];preset()}if(m==='duel'&&!init)units=[]}
   lastMode=m;$('fight').textContent=fightLabel();renderInfo();
 }
@@ -639,6 +639,7 @@ function applyPass(it,P,quiet,noBuild){
   const o=Object.assign({},it.ov||{}),c=cleanOv(P);
   if(c.atks.length)o.atks=c.atks;if(c.chr!=='own')o.chr=c.chr;if(c.idle!=='own')o.idle=c.idle;
   if(c.muz)o.muz=c.muz;if(c.at)o.at=c.at;if(c.parts.length&&(P.force||!(o.parts&&o.parts.length))){o.parts=c.parts;o.rv=2}
+  if(has(ARCH,P.role)&&P.role!==it.role&&it.D&&it.D.img){it.role=P.role;it.base=customD(P.role,it.D.img)}
   if(EL[P.el])o.el=P.el;o.cool=clamp(Math.round(+P.cool||3),1,5);o.kind=passText(P.kind).slice(0,32);o.note=passText(P.note).slice(0,160);
   const L=P.lines&&(P.lines[passLang()]||P.lines.en||P.lines.ru);
   if(L&&typeof L==='object'){o.lines={};['start','kill','low','win'].forEach(k=>{o.lines[k]=typeof L[k]==='string'?L[k].slice(0,90):''})}
@@ -647,22 +648,23 @@ function applyPass(it,P,quiet,noBuild){
 let cardDone=null;
 function showCard(it,kind,P){
   const o=it.ov||{},pass=kind==='pass',el=EL[pass&&EL[P.el]?P.el:elOf(it)],stars=pass?clamp(Math.round(+P.cool||3),1,5):(o.cool||3);
-  $('cardCap').textContent=pass?'Настоящий паспорт героя':'Первичный осмотр';
+  $('cardCap').textContent=it._hatch?'Вылупился!':pass?'Настоящий паспорт героя':'Первичный осмотр';
   $('cardImg').src=it.src;$('cardName').textContent=it.name;
   $('cardKind').textContent=(pass?passText(P.kind)+' · ':'')+el.ico+' '+el.name;
   $('cardStars').textContent='★'.repeat(stars)+'☆'.repeat(5-stars);
   $('cardText').textContent=pass?passText(P.note):gal.api?'Отправь героя в галерею: там его рассмотрят как следует и выдадут настоящий паспорт.':'Стихию и крутость определили по рисунку.';
-  $('cardOk').textContent=pass?'Принять паспорт':'Понятно';
-  const fxEl=$('cardFx');fxEl.className='cardfx';void fxEl.offsetWidth;fxEl.className='cardfx go'+(pass?' big':'');$('cardBody').className='cardbody go'+(pass?' big':'');
+  $('cardOk').textContent=it._hatch?'Ура!':pass?'Принять паспорт':'Понятно';
+  const fxEl=$('cardFx');fxEl.className='cardfx';void fxEl.offsetWidth;fxEl.className='cardfx go'+(pass||it._hatch?' big':'')+(it._hatch?' egg':'');$('cardBody').className='cardbody go'+(pass||it._hatch?' big':'');
   $('card').hidden=false;sfx(pass?'win':'pop');
-  cardDone=pass?()=>{applyPass(it,P);renderLib();renderInfo()}:null;
+  const hatch=it._hatch;it._hatch=false;
+  cardDone=pass||hatch?()=>{if(pass)applyPass(it,P,true);if(hatch){it.ov=Object.assign({},it.ov||{},{hatch:1});OV[it.id]=it.ov;buildD(it)}saveState();renderLib();renderInfo();if(hatch)hubOpen('heroes')}:null;
 }
 $('cardOk').onclick=()=>{$('card').hidden=true;if(cardDone){const f=cardDone;cardDone=null;f()}setTimeout(passCheck,600)};
 // свои герои, отправленные в галерею, ждут паспорт: проверяем, не готов ли он
 async function passCheck(){
   if(!gal.base||state!=='setup'||!$('card').hidden)return;
   for(const it of library){
-    const o=it.ov;if(!it.custom||!o||!o.gid||it._pc)continue;it._pc=1;
+    const o=it.ov;if(!it.custom||!o||!o.gid||it._pc||isEgg(it))continue;it._pc=1;
     const P=await fetch(gal.base.replace(/heroes\/$/,'meta/')+o.gid+'.json').then(x=>x.ok?x.json():null).catch(()=>null);
     if(!P||(o.pass||0)>=Math.max(1,Math.round(+P.rev||1)))continue;
     if(state==='setup'&&$('card').hidden){showCard(it,'pass',P);return}
@@ -673,41 +675,147 @@ async function galPreload(){
   try{
     const d=await fetch(gal.api+'/index').then(x=>x.json());
     gal.base=String(d.base||'');gal.items=(Array.isArray(d.items)?d.items:[]).filter(i=>i&&/^[a-z0-9]{6,20}$/.test(i.id));
-    setTimeout(passCheck,1500);
+    setTimeout(passCheck,1500);eggCheck();
     gal.pool=[];for(const i of gal.items.slice().sort(()=>Math.random()-.5).slice(0,8)){const r=await galRec(i.id),it=r&&await galItem(i.id,r);if(it)gal.pool.push(it)}
   }catch(err){}
 }
 
-/* ---------- путь героя: уровни за победы, соперники всё сильнее ---------- */
-const path={foeLvl:1};
-function PS(){const p=S.path||(S.path={rung:0,h:{}});p.h=p.h||{};p.rung=p.rung||0;return p}
+/* ---------- путь героя: башня, свои герои, инкубатор, миссии ---------- */
+const path={foeLvl:1,tab:'tower'};
+const STARTERS=['d-king','d-dino','d-golem'],GIFTS=['d-blade','d-teeth','d-witch','d-black','d-rider','d-purple','d-saw','d-fort'];
+const REWARD={2:'hero',3:'egg',5:'hero',7:'egg',9:'hero',12:'egg',15:'crown'},TOP=15; // что дают за этаж
+function PS(){const p=S.path||(S.path={});p.h=p.h||{};p.rung=p.rung||0;p.own=p.own||[];p.wins=p.wins||0;p.ms=p.ms||{set:0,w:0,f:0,k:0,got:[0,0,0]};return p}
 const pathH=id=>{const p=PS();return p.h[id]||(p.h[id]={l:1,x:0})};
 const pathNeed=l=>30+20*l;
-function pathTag(it){const b=it.pit||it,h=it.lvl?{l:it.lvl}:pathH(b.id),e=EL[elOf(it)];return e.ico+' '+e.name+' · ур. '+h.l}
-function pathItem(it,l){ // герой для пути: сила от уровня, а не от настроек песочницы
-  const slots=l>=6?3:l>=3?2:1,o=Object.assign({},it.ov||{},{pw:1+.1*(l-1),sp:1,as:1,size:1});
+const isEgg=it=>!!(it.custom&&it.ov&&it.ov.egg&&!it.ov.hatch);
+const pathOwns=it=>!it.prop&&(it.custom?!!(it.ov&&(it.ov.hatch||(it.ov.pass&&!it.ov.egg))):PS().own.includes(it.id)); // свой герой с паспортом тоже считается вылупившимся
+const pathRoster=()=>library.filter(pathOwns);
+const eggSlots=()=>Object.keys(REWARD).filter(f=>REWARD[f]==='egg'&&PS().rung>=+f).length;
+const floorDef=f=>({n:f<3?1:f<6?2:3,l:1+Math.floor((f-1)*.5),k:f<2?.55:f<3?.7:f<5?.85:1}); // врагов не больше, чем героев у игрока к этому этажу
+function pathTag(it){const b=it.pit||it,h=it.lvl?{l:it.lvl}:pathH(b.id),el=EL[elOf(it)];return el.ico+' '+el.name+' · ур. '+h.l}
+function pathItem(it,l,k){ // герой для пути: сила от уровня, а не от настроек песочницы
+  const slots=l>=6?3:l>=3?2:1,o=Object.assign({},it.ov||{},{pw:(1+.1*(l-1))*(k||1),sp:1,as:1,size:1});
   if(o.atks&&o.atks.length)o.atks=o.atks.slice(0,slots);
   const n=Object.assign({},it,{ov:o,pit:it,lvl:l,size:1});buildD(n);n.size=1;
   n.D.atks=n.D.atks.slice(0,slots);n.D.atk=n.D.atks[0];n.D.noSup=l<2;return n;
 }
+function pathXp(id,gain,ups){
+  const h=pathH(id),it=library.find(i=>i.id===id);h.x+=gain;
+  while(h.x>=pathNeed(h.l)){h.x-=pathNeed(h.l);h.l++;if(ups)ups.push((it?it.name:'')+' — '+'уровень'+' '+h.l+(h.l===2?' ('+'открыт суперудар'+')':h.l===3?' ('+'вторая атака'+')':h.l===6?' ('+'третья атака'+')':''))}
+}
 function pathLoad(keep){
   const p=PS(),mine=keep&&snapshot?snapshot.filter(q=>q.team===0):[];
-  units=[];props=[];selU=selP=null;
-  mine.forEach(q=>{const b=q.item.pit||q.item,pos=fromAB(q.a,q.b);units.push(makeUnit(pathItem(b,pathH(b.id).l),pos.x,pos.y,0,1))});
-  const r=p.rung,n=r<1?1:r<3?2:3,fl=1+Math.floor(r*.7),own=library.filter(i=>!i.prop),used=new Set();path.foeLvl=fl;
-  for(let k=0;k<n;k++){
+  units=[];props=[];selU=selP=selected=null;
+  mine.forEach(q=>{const b=q.item.pit||q.item,pos=fromAB(q.a,q.b);if(pathOwns(b))units.push(makeUnit(pathItem(b,pathH(b.id).l),pos.x,pos.y,0,1))});
+  const d=floorDef(p.rung+1),own=library.filter(i=>!i.prop&&!isEgg(i)),used=new Set();path.foeLvl=d.l;
+  for(let k=0;k<d.n&&p.own.length;k++){
     let it=null;for(let t=0;t<12&&(!it||used.has(it.id));t++){const src=gal.pool&&gal.pool.length&&Math.random()<.6?gal.pool:own;it=src[(Math.random()*src.length)|0]}
     if(!it)break;used.add(it.id);
-    const pos=fromSide(1,.5+.2*(k%2),(k+1)/(n+1)),u=makeUnit(pathItem(it,Math.max(1,fl-(k?1:0))),pos.x,pos.y+base,1,1);u.locked=true;units.push(u);
+    const pos=fromSide(1,.5+.2*(k%2),(k+1)/(d.n+1)),u=makeUnit(pathItem(it,Math.max(1,d.l-(k?1:0)),d.k),pos.x,pos.y+base,1,1);u.locked=true;units.push(u);
   }
-  $('fight').textContent=fightLabel();renderInfo();
+  $('fight').textContent=fightLabel();renderLib();
 }
 function pathFinish(won){
-  const p=PS(),ids=[...new Set(snapshot.filter(q=>q.team===0).map(q=>(q.item.pit||q.item).id))],gain=won?20+8*path.foeLvl:8,ups=[];
-  ids.forEach(id=>{
-    const h=pathH(id),it=library.find(i=>i.id===id);h.x+=gain;
-    while(h.x>=pathNeed(h.l)){h.x-=pathNeed(h.l);h.l++;ups.push((it?it.name:'')+' — '+'уровень'+' '+h.l+(h.l===2?' ('+'открыт суперудар'+')':h.l===3?' ('+'вторая атака'+')':h.l===6?' ('+'третья атака'+')':''))}
-  });
-  if(won)p.rung++;
-  return{title:won?'Победа!':'Не вышло',text:'Опыт'+' +'+gain+(ups.length?' · '+ups.join(' · '):''),again:'Дальше'};
+  const p=PS(),ids=[...new Set(snapshot.filter(q=>q.team===0).map(q=>(q.item.pit||q.item).id))],gain=won?20+8*path.foeLvl:8,ups=[],extra=[];
+  ids.forEach(id=>pathXp(id,gain,ups));
+  if(won){
+    p.rung++;p.wins++;p.ms.w++;p.ms.k+=units.filter(u=>u.team===0).reduce((a,u)=>a+u.kills,0);
+    if(units.filter(u=>u.team===0&&!u.dead).length>=snapshot.filter(q=>q.team===0).length)p.ms.f++;
+    const r=REWARD[p.rung];
+    if(r==='hero'){const id=GIFTS.find(g=>!p.own.includes(g)&&library.some(i=>i.id===g));if(id){p.own.push(id);extra.push('Новый герой'+': '+library.find(i=>i.id===id).name)}}
+    else if(r==='egg')extra.push(eggSlots()===1?'Открыт инкубатор: можно принести свой рисунок!':'В инкубаторе новое место');
+    else if(r==='crown')extra.push('Башня пройдена!');
+  }
+  return{title:won?'Победа!':'Не вышло',text:'Опыт'+' +'+gain+(extra.length?' · '+extra.join(' · '):'')+(ups.length?' · '+ups.join(' · '):''),again:'Дальше'};
 }
+// ----- инкубатор: рисунок кладут в яйцо, оно уходит на проверку и вылупляется с паспортом
+function eggLay(it){
+  it.ov=Object.assign({},it.ov||{},{egg:1,eggW:PS().wins});OV[it.id]=it.ov;library.push(it);saveCustom();cloudMark('h:'+it.id);saveState();renderLib();
+  toast('Яйцо в инкубаторе');eggSend(it);hubOpen('inc');
+}
+async function eggSend(it){ // отправляем рисунок на проверку; не вышло — попробуем при следующем заходе
+  if(!gal.api||(it.ov&&it.ov.gid)||it._send)return;it._send=1;
+  try{
+    const src=await fitSrc(it.src,200000);if(!src)throw 0;
+    const x=await fetch(gal.api+'/hero',{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify({v:1,name:it.name,role:it.role,face:it.face||0,src,ov:cleanOv(it.ov)})});
+    const j=x.ok?await x.json().catch(()=>null):null;
+    if(j&&j.id){it.ov=Object.assign({},it.ov||{},{gid:j.id});OV[it.id]=it.ov;saveState()}
+  }catch(err){}
+  it._send=0;if(!$('hub').hidden)hubRender();
+}
+async function eggCheck(){
+  for(const it of library.filter(isEgg)){
+    if(!gal.api){it._ready=PS().wins-(it.ov.eggW||0)>=2;continue}
+    if(!it.ov.gid){eggSend(it);continue}
+    if(it._P||!gal.base)continue;
+    const P=await fetch(gal.base.replace(/heroes\/$/,'meta/')+it.ov.gid+'.json',{cache:'no-store'}).then(x=>x.ok?x.json():null).catch(()=>null);
+    if(P){it._P=P;it._ready=true}
+  }
+  hubBadge();if(!$('hub').hidden&&path.tab==='inc')hubRender();
+}
+function eggHatch(it){$('hub').hidden=true;it._hatch=true;showCard(it,it._P?'pass':'scan',it._P)}
+// ----- миссии: три задания, награда — опыт всем своим героям
+function missions(){const m=PS().ms,s=m.set;return[
+  {t:'Победи в башне',n:m.w,g:2+s},{t:'Победи, не потеряв ни одного героя',n:m.f,g:1+(s>>1)},{t:'Одолей врагов',n:m.k,g:5+2*s}]}
+function missionClaim(i){
+  const p=PS(),ms=missions();if(p.ms.got[i]||ms[i].n<ms[i].g)return;p.ms.got[i]=1;
+  const ups=[];pathRoster().forEach(it=>pathXp(it.id,40,ups));toast('Опыт'+' +40'+(ups.length?' · '+ups.join(' · '):''));sfx('win');
+  if(p.ms.got.every(Boolean))p.ms={set:p.ms.set+1,w:0,f:0,k:0,got:[0,0,0]};
+  saveState();hubRender();if(S.set.mode==='path'&&state==='setup')pathLoad(true);
+}
+// ----- меню пути
+function hubBadge(){const b=$('hubBtn'),ms=missions(),got=PS().ms.got;b.classList.toggle('dot',library.some(i=>isEgg(i)&&i._ready)||ms.some((q,i)=>!got[i]&&q.n>=q.g))}
+function hubOpen(tab){if(S.set.mode!=='path')return;path.tab=tab||path.tab;$('hub').hidden=false;hubRender();eggCheck()}
+const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n};
+function hubRender(){
+  const p=PS(),box=$('hubBody');box.textContent='';press('#hubTabs button',path.tab);hubBadge();
+  if(!p.own.length){ // самое начало: выбираем первого героя
+    $('hubTabs').hidden=true;$('hubGo').hidden=true;box.append(el('p','hubnote','Выбери первого героя. Остальных получишь в башне, а потом принесёшь и свой рисунок.'));
+    const row=el('div','hubcards');STARTERS.forEach(id=>{const it=library.find(i=>i.id===id);if(!it)return;const c=heroCard(it,true),b=el('button','btn dark','Выбрать');b.type='button';
+      b.onclick=()=>{p.own.push(id);saveState();pathLoad(false);path.tab='tower';hubRender()};c.append(b);row.append(c)});
+    box.append(row);return;
+  }
+  $('hubTabs').hidden=false;$('hubGo').hidden=false;$('hubGo').textContent='В бой: этаж'+' '+(p.rung+1);
+  if(path.tab==='tower'){
+    const cur=p.rung+1,top=Math.max(TOP,cur+3),list=el('div','tower');
+    for(let f=Math.min(top,cur+6);f>=Math.max(1,cur-2);f--){
+      const d=floorDef(f),r=REWARD[f],row=el('div','floor'+(f===cur?' cur':f<cur?' done':''));
+      row.append(el('b','',f<cur?'✓':String(f)),el('span','', 'Врагов'+': '+d.n+' · ур. '+d.l));
+      if(r)row.append(el('i','',r==='hero'?'⭐ '+'Новый герой':r==='egg'?'🥚 '+'Инкубатор':'👑 '+'Вершина'));
+      list.append(row);
+    }
+    box.append(el('p','hubnote','Поднимайся по башне: на отмеченных этажах ждут новые герои и места в инкубаторе.'),list);
+  }else if(path.tab==='heroes'){
+    const row=el('div','hubcards');pathRoster().forEach(it=>row.append(heroCard(it)));
+    box.append(el('p','hubnote','Герои получают опыт за бои в башне и за миссии. В бой можно взять троих.'),row);
+  }else if(path.tab==='inc'){
+    const slots=eggSlots(),eggs=library.filter(isEgg),need=Object.keys(REWARD).filter(f=>REWARD[f]==='egg').map(Number),row=el('div','hubcards');
+    for(let i=0;i<3;i++){
+      const c=el('div','hcard egg');
+      if(i>=slots){c.append(el('div','eggpic lock','🔒'),el('span','','Откроется на этаже'+' '+need[i]))}
+      else if(eggs[i]){
+        const it=eggs[i],pic=el('div','eggpic'+(it._ready?' ready':'')),im=el('img');im.src=it.src;im.alt='';pic.append(im);c.append(pic,el('b','',it.name));
+        if(it._ready){const b=el('button','btn mark','Вылупить');b.type='button';b.onclick=()=>eggHatch(it);c.append(el('span','','Готов вылупиться!'),b)}
+        else c.append(el('span','',!gal.api?'Греется от побед в башне. Осталось побед'+': '+Math.max(1,2-(p.wins-(it.ov.eggW||0))):it.ov.gid?'Рисунок проверяют и учат двигаться. Загляни позже.':'Нет связи: отправим рисунок при следующем заходе.'));
+      }else{const b=el('button','btn dark','Положить рисунок');b.type='button';b.onclick=()=>{$('incAsk').hidden=false};c.append(el('div','eggpic empty','＋'),b)}
+      row.append(c);
+    }
+    box.append(el('p','hubnote','Принеси свой рисунок: он полежит в яйце, пока его проверяют и учат двигаться, а потом вылупится героем.'),row);
+  }else{
+    const list=el('div','tower'),got=p.ms.got;
+    missions().forEach((q,i)=>{const row=el('div','floor'+(got[i]?' done':q.n>=q.g?' cur':''));row.append(el('b','',got[i]?'✓':'★'),el('span','',q.t+': '+Math.min(q.n,q.g)+' / '+q.g));
+      if(!got[i]&&q.n>=q.g){const b=el('button','btn mark','Забрать');b.type='button';b.onclick=()=>missionClaim(i);row.append(b)}else row.append(el('i','','Опыт'+' +40'));list.append(row)});
+    box.append(el('p','hubnote','Награда за миссию — опыт всем твоим героям. Выполнишь все три — появятся новые.'),list);
+  }
+}
+function heroCard(it,plain){
+  const c=el('div','hcard'),im=el('img');im.src=it.src;im.alt='';const e2=EL[elOf(it)];c.append(im,el('b','',it.name),el('span','',e2.ico+' '+e2.name));
+  if(plain)return c;
+  const h=pathH(it.id),bar=el('div','xpbar'),fill=el('i');fill.style.width=Math.round(h.x/pathNeed(h.l)*100)+'%';bar.append(fill);
+  c.append(el('span','','Уровень'+' '+h.l+' · '+'сила'+' '+power(pathItem(it,h.l).D,1)),bar,el('small','',h.l<2?'Ур. 2: суперудар':h.l<3?'Ур. 3: вторая атака':h.l<6?'Ур. 6: третья атака':'Все атаки открыты'));
+  return c;
+}
+document.querySelectorAll('#hubTabs button').forEach(b=>b.onclick=()=>{path.tab=b.dataset.v;hubRender()});
+$('hubBtn').onclick=()=>hubOpen();$('hubGo').onclick=()=>{$('hub').hidden=true};
+$('incNo').onclick=()=>{$('incAsk').hidden=true};
+$('incOk').onclick=()=>{$('incAsk').hidden=true;$('hub').hidden=true;incub=true;$('file').click()};

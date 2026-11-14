@@ -138,7 +138,7 @@ function buildD(it){
 }
 const LS='paper-battles-heroes-v1';
 // всё, что надо помнить между запусками и устройствами
-const S={ts:0,ov:{},stats:{},lineups:[],set:{paper:'white',mute:false,music:false,limit:0,mode:'free',tip:false},camp:{level:0},deleted:[]};
+const S={ts:0,ov:{},stats:{},lineups:[],set:{paper:'white',mute:false,music:false,limit:0,mode:'path',tip:false},camp:{level:0},deleted:[]};
 try{
   const j=JSON.parse(localStorage.getItem(LS+'-state')||'null');
   if(j){Object.assign(S,j);S.set=Object.assign({paper:'white',mute:false,music:false,limit:0,mode:'free',tip:false},j.set||{});S.camp=Object.assign({level:0},j.camp||{})}
@@ -206,7 +206,9 @@ function loadCustom(){
 }
 function renderLib(){
   const lib=$('lib');lib.textContent='';
+  const inPath=S.set.mode==='path';
   library.forEach(it=>{
+    if(isEgg(it)||(inPath&&!pathOwns(it)))return; // яйцо ещё не герой; в пути только свои герои
     const b=document.createElement('button');b.className='item';b.type='button';
     b.setAttribute('aria-pressed',selected===it?'true':'false');b.title=it.name+': '+it.D.desc;
     const im=document.createElement('img');im.src=it.src;im.alt='';
@@ -219,7 +221,7 @@ function renderLib(){
   });
   const add=document.createElement('button');add.className='item add';add.type='button';
   add.innerHTML='<b>+</b><span>Рисунок</span>';add.title='Добавить свой рисунок из фото';
-  add.addEventListener('click',()=>$('file').click());lib.prepend(add);
+  add.addEventListener('click',()=>$('file').click());if(!inPath)lib.prepend(add);
   renderInfo();
 }
 function hintText(){
@@ -1243,7 +1245,7 @@ function drawOverlay(t){
   }
   if((m==='camp'||m==='path')&&state==='setup'){
     ctx.fillStyle='rgba(42,42,51,.75)';ctx.textAlign='center';ctx.font=`${fs}px Neucha,"Comic Sans MS",cursive`;
-    const tx=m==='path'?'Ступень '+(PS().rung+1):'Уровень '+(camp.i+1)+' · '+camp.name;
+    const tx=m==='path'?'Этаж '+(PS().rung+1):'Уровень '+(camp.i+1)+' · '+camp.name;
     if(portrait)ctx.fillText(tx,W/2,H/2-8);else{ctx.save();ctx.translate(W/2-8,H/2);ctx.rotate(-Math.PI/2);ctx.fillText(tx,0,0);ctx.restore()}
   }
   if(state==='over'&&cele)drawCele(t);
@@ -1284,7 +1286,7 @@ function frame(ms){
 
 /* ---------- свой рисунок ---------- */
 /*CUTOUT*/
-let rigNew=null,pendingSrc=null,an=null,keepA=null,man=null,tool=2,pendingRole='fighter',pendingFace=0,cutRaf=0,recutIt=null;
+let incub=false,rigNew=null,pendingSrc=null,an=null,keepA=null,man=null,tool=2,pendingRole='fighter',pendingFace=0,cutRaf=0,recutIt=null;
 const dcv=$('dlgCv'),dctx=dcv.getContext('2d');
 function finalKeep(){const k=new Uint8Array(keepA.length);for(let i=0;i<k.length;i++)k[i]=man[i]===1?1:man[i]===2?0:keepA[i];return k}
 // вид редактора вырезания: увеличение и сдвиг (двумя пальцами, колесом или кнопками)
@@ -1360,7 +1362,7 @@ function openDlg(){
   $('dlgTol').value=recutIt?recutIt.tol||34:34;recut();
   $('dlgName').value=recutIt?recutIt.name0:'Герой '+(library.filter(i=>i.custom).length+1);
   pendingRole=recutIt?recutIt.role:'fighter';pendingFace=recutIt?recutIt.face:0;renderRoles();renderFace();
-  const re=recutIt&&recutIt!==rigNew;$('dlgTitle').textContent=re?'Перевырезать героя':'Шаг 1: вырезать героя';$('dlgOk').textContent=re?'Сохранить':'Дальше';$('dlg').hidden=false;
+  const re=recutIt&&recutIt!==rigNew;$('dlgTitle').textContent=re?'Перевырезать героя':'Шаг 1: вырезать героя';$('dlgOk').textContent=re?'Сохранить':incub?'В инкубатор':'Дальше';$('dlg').hidden=false;
 }
 // повторная правка: поднимаем исходное фото и прежнюю маску
 function openRecut(it){
@@ -1390,14 +1392,14 @@ function renderRoles(){
   chips($('dlgRoles'),Object.entries(ARCH).map(([k,v])=>[k,v.name]),pendingRole,v=>{pendingRole=v;renderRoles()});
   $('dlgDesc').textContent=ARCH[pendingRole].name+': '+ARCH[pendingRole].desc+'. Атаку и характер потом можно поменять в «Настроить».';
 }
-$('dlgCancel').onclick=()=>{$('dlg').hidden=true;an=pendingSrc=null;recutIt=null;rigNew=null};
+$('dlgCancel').onclick=()=>{$('dlg').hidden=true;an=pendingSrc=null;recutIt=null;rigNew=null;incub=false};
 $('dlgForm').addEventListener('submit',e=>{
   e.preventDefault();if(!an)return;
   const keep=finalKeep(),tol=+$('dlgTol').value,img=compose(an,keep,tol);if(!img){toast('От рисунка ничего не осталось. Верни часть кистью.');return}
   const name=($('dlgName').value.trim()||'Герой').slice(0,14),src=img.toDataURL('image/webp',.9),raw=pendingSrc.toDataURL('image/jpeg',.75),mask=maskURL(keep);
   let it=recutIt;
   if(it){Object.assign(it,{name0:name,role:pendingRole,face:pendingFace,base:customD(pendingRole,img),src,raw,mask,tol});buildD(it);(pv.save?pv.save.units:units).forEach(u=>{if(u.item===it){u.D=it.D;u.cds=u.D.atks.map(()=>.4);if(!preview)applySize(u)}})}
-  else{it={id:'c-'+Date.now(),name0:name,role:pendingRole,face:pendingFace,base:customD(pendingRole,img),src,raw,mask,tol,custom:true,size:1,ov:null};{const sc=scanImg(img);it.ov={el:sc.el,cool:sc.cool};OV[it.id]=it.ov}buildD(it);rigNew=it}
+  else{it={id:'c-'+Date.now(),name0:name,role:pendingRole,face:pendingFace,base:customD(pendingRole,img),src,raw,mask,tol,custom:true,size:1,ov:null};{const sc=scanImg(img);it.ov={el:sc.el,cool:sc.cool};OV[it.id]=it.ov}buildD(it);if(incub){incub=false;an=pendingSrc=null;$('dlg').hidden=true;eggLay(it);return}rigNew=it}
   an=pendingSrc=null;$('dlg').hidden=true;saveCustom();cloudMark('h:'+it.id);renderLib();
   if(recutIt&&!$('ed').hidden){recutIt=null;selectEd(it)}recutIt=null;
   if(rigNew){edIt=rigNew;edOv=ovFor(rigNew);$('edName').value=rigNew.name0;rigOpen()} // следующий шаг: разметка, герой попадёт в набор после неё
@@ -1500,7 +1502,7 @@ $('clear').onclick=()=>{
   selU=selP=null;renderInfo();
 };
 $('random').onclick=randomize;
-$('again').onclick=()=>{if(S.set.mode==='path'){pathLoad(true);setState('setup')}else if(S.set.mode==='camp'&&camp.won){loadLevel(camp.i+1);setState('setup')}else begin()};
+$('again').onclick=()=>{if(S.set.mode==='path'){pathLoad(true);setState('setup');hubOpen('tower')}else if(S.set.mode==='camp'&&camp.won){loadLevel(camp.i+1);setState('setup')}else begin()};
 $('edit').onclick=()=>{if(S.set.mode==='path')pathLoad(true);else restore();if(S.set.mode==='duel')duelPhase=0;setState('setup')};
 const sndBtn=$('snd');sndBtn.setAttribute('aria-pressed',muted?'false':'true');
 sndBtn.onclick=()=>{muted=!muted;S.set.mute=muted;sndBtn.setAttribute('aria-pressed',muted?'false':'true');saveState();if(!muted)sfx('pop')};
@@ -1511,6 +1513,6 @@ document.querySelectorAll('.papers button').forEach(b=>b.onclick=()=>{setPaper(b
 /*EXTRAS*/
 setPaper(paper);
 renderLib();loadCustom();
-resize();preset();applyMode(true);renderMenu();cloudInit();if(!S.set.tip)$('tip').hidden=false;
+resize();preset();applyMode(true);renderMenu();cloudInit();if(!S.set.tip&&S.set.mode!=='path')$('tip').hidden=false;
 new ResizeObserver(resize).observe(stage);
 requestAnimationFrame(frame);
