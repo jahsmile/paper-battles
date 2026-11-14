@@ -89,6 +89,7 @@ const TRAITS=['pick','keep','creep','enrage','berserk','charge','aura','scream',
 const ATK={
   punch:{name:'Кулаки',a:{k:'melee',cd:.8,dmg:24,fx:'punch'}},
   claw:{name:'Когти',a:{k:'melee',cd:.45,dmg:15,fx:'claw'}},
+  grab:{name:'Захват',a:{k:'melee',cd:2.8,dmg:40,fx:'grab'}},
   saw:{name:'Пила',a:{k:'saw',cd:.14,dmg:7}},
   burst:{name:'Очередь',a:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09}},
   shell:{name:'Снаряды',a:{k:'shell',range:8.5,cd:2.2,dmg:40,blast:1.6}},
@@ -614,6 +615,9 @@ function melee(u,t,M,foes,reach,prim){
     const dmg=M.dmg*u.dm*u.buff,hit=o=>hurt(o,dmg,u.x,u.y,M.push||.3,false,u);
     if(M.aoe){foes.forEach(o=>{if(!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<reach+M.aoe*base)hit(o)});fx.push({k:'arc',x:u.x,y:u.y-u.h*.4,r:u.r+M.aoe*base,t:0,life:.25});word('ХЛЫСЬ!',u.x,u.y-u.h,1.1);return}
     if(t.dead||Math.hypot(t.x-u.x,t.y-u.y)>reach*1.6)return;
+    if(M.fx==='grab'&&!t.D.heavy&&!(t.liftT>0)&&!(u.liftT>0)){ // хватает врага, поднимает над головой и швыряет об лист
+      const T2=1.15;t.liftT=u.liftT=t.liftD=u.liftD=T2;t.liftV=true;t.liftBy=u;t.liftDmg=dmg;u.liftV=false;t.dash=0;sfx('whoosh');word('ХВАТЬ!',u.x,u.y-u.h*1.1,1.1);return;
+    }
     hit(t);const cx=t.x,cy=t.y-t.h*.5;
     if(M.fx==='claw'){fx.push({k:'slash',x:cx,y:cy,t:0,life:.28,rot:rnd(-.4,.4),s:Math.min(t.h*.35,base*1.6)});sfx('slash')}
     else if(M.fx==='bite'){fx.push({k:'chomp',x:cx,y:cy,t:0,life:.3,s:Math.min(t.h*.35,base*1.6)});word('АМ!',cx,cy-t.h*.5,1.2);sfx('bite')}
@@ -701,6 +705,18 @@ function update(dt){
     if(u.dmgAcc>=1){u.dmgT-=dt;if(u.dmgT<=0){fx.push({k:'num',text:'−'+Math.round(u.dmgAcc),x:u.x+rnd(-.3,.3)*u.r,y:u.y-u.h*.9,vx:0,vy:-base*1.6,t:0,life:.8});u.dmgAcc=0;u.dmgT=.4}}
     if(u.q.length){for(const a of u.q)a.t-=dt;const due=u.q.filter(a=>a.t<=0);u.q=u.q.filter(a=>a.t>0);for(const a of due)if(!u.dead)a.fn()}
     if(u.dead)continue;
+    if(u.liftT>0){
+      u.liftT-=dt;const b=u.liftBy;
+      if(u.liftV){
+        if(!b||b.dead){u.liftT=0;u.liftV=false}
+        else{u.x=b.x;u.y=b.y+1;if(u.liftT<=0){
+          u.liftV=false;u.x=b.x+b.face*(b.r+u.r)*.9;fit(u);const dm=u.liftDmg;
+          hurt(u,dm,b.x,b.y,.5,false,b);word('ШМЯК!',u.x,u.y-u.h*.3,1.3);
+          foesOf(b).forEach(o=>{if(o!==u&&!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<base*2.2)hurt(o,dm*.4,u.x,u.y,.5,false,b)});
+        }}
+      }
+      if(u.liftT>0)continue;
+    }
     u.glueT-=dt;if(u.holdT>0){u.holdT-=dt;continue}
     if(!u.saidLow&&hpR<.35){u.saidLow=true;say(u,'low')}
     if(u.fearT>0){u.fearT-=dt;const dx=u.x-u.fx,dy=u.y-u.fy,d=Math.hypot(dx,dy)||1;step(u,dx,dy,d,1.3,dt);u.face=dx>0?1:-1;continue}
@@ -903,6 +919,7 @@ function drawUnit(u,t){
     }
     if(u.walking&&D.idle!=='stomp'&&D.idle!=='float'){if(D.veh)oy+=Math.sin(t*45+ph)*.7;else{oy-=Math.abs(Math.sin(t*9+ph))*u.h*.045;rot+=Math.sin(t*9+ph)*.05}}
     if(u.dash>0)rot+=.14;
+    if(u.liftT>0){const k=Math.min(1,(u.liftD-u.liftT)/.3);if(u.liftV&&u.liftBy){oy-=u.liftBy.h*.92*k;rot+=Math.sin(t*22+ph)*.1}else{sy*=1-.05*k;rot+=Math.sin(t*14)*.03}}
     if(u.sawT>0){ox+=(Math.random()-.5)*2;rot+=.05}
     if(state==='over')oy-=Math.abs(Math.sin(t*7+ph))*u.h*.12;
     if(an){
