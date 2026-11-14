@@ -43,6 +43,14 @@ const CH={
     atk:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09},melee:{cd:2.4,dmg:20,fx:'tail',part:'tail',aoe:1.4,push:1.6},muz:[[.82,.11]],lines:L(['Тра-та-та!'],['Ура!'],['Ой-ой!'],['Я самый быстрый!'])},
   duo:{name:'Двупушка',tag:'ворчун с двумя пушками',desc:'Верхняя пушка по очереди бьёт огнём, льдом, ядом и ядерным зарядом. Нижняя строчит пулями.',H:3.1,hp:300,speed:1.2,pw:30,veh:1,idle:'rumble',
     atk:{k:'shell',range:7.5,cd:2.4,dmg:26,blast:1.4,ammo:['fire','ice','poison','nuke'],mi:0},far:{k:'burst',range:6.5,cd:1.5,dmg:8,n:4,gap:.09,mi:1},muz:[[.88,.21],[.985,.555]],lines:L(['Сейчас как бахну!'],['Готов!'],['Эй, полегче!'],['Обе пушки молодцы.'])},
+  // слуги Ластика: канцелярские злодеи
+  blot:{name:'Клякса',tag:'слуга Ластика',desc:'Слуга Ластика.',H:2.3,hp:150,speed:2.4,pw:13,idle:'wobble',atk:{k:'melee',cd:.7,dmg:16,fx:'punch'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
+  pin:{name:'Кнопка',tag:'слуга Ластика',desc:'Слуга Ластика.',H:1.7,hp:90,speed:3.2,pw:10,idle:'hop',atk:{k:'melee',cd:.5,dmg:12,fx:'claw'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
+  clip:{name:'Скрепка',tag:'слуга Ластика',desc:'Слуга Ластика.',H:2.4,hp:170,speed:2,pw:15,idle:'breathe',atk:{k:'melee',cd:1.2,dmg:26,fx:'bite',push:.5},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
+  sharp:{name:'Точилка',tag:'слуга Ластика',desc:'Слуга Ластика.',H:2.6,hp:260,speed:1.5,pw:20,armor:.85,idle:'rumble',atk:{k:'saw',cd:.14,dmg:6,at:[.72,.6]},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
+  scis:{name:'Ножницы',tag:'слуга Ластика',desc:'Слуга Ластика.',H:2.2,hp:160,speed:2.6,pw:17,idle:'hop',atk:{k:'melee',cd:1,dmg:30,fx:'claw'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
+  glue:{name:'Клей',tag:'слуга Ластика',desc:'Слуга Ластика.',H:3,hp:180,speed:1.1,pw:18,idle:'wobble',atk:{k:'shell',range:6.5,cd:2.2,dmg:18,blast:1.3,freeze:2.5,col:'#f4f4f4'},muz:[[.85,.33]],lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
+  eraser:{name:'Ластик',tag:'главный злодей',desc:'Стирает рисунки. Главный злодей альбома.',H:3.6,hp:700,speed:1.1,pw:40,heavy:1,idle:'angry',atk:{k:'melee',cd:1.8,dmg:46,fx:'slam',aoe:1.6,push:1.6},far:{k:'burst',range:6,cd:2.4,dmg:9,n:3,gap:.12},muz:[[.92,.3]],lines:L(['Сотру!'],['Ха!'],['Ой!'],['Хе-хе!'])},
   saw:{name:'Пила',tag:'упрямый силач',desc:'Идёт напролом и пилит всё подряд, по пути постреливает с плеча. Броня гасит часть урона.',H:3.7,hp:430,speed:1.25,pw:30,armor:.7,idle:'breathe',
     atk:{k:'saw',cd:.14,dmg:7,at:[.115,.83]},far:{k:'burst',range:6,cd:1.7,dmg:12,n:1},muz:[[.97,.2]],lines:L(['ВЖЖЖЖ!'],['Распилил!'],['Не отступлю!'],['Вжик, и готово.'])},
   black:{name:'Чёрный',tag:'злой и вспыльчивый',desc:'Стреляет огненными снарядами, после них горит земля. Когда ранен, звереет и палит почти вдвое чаще.',H:2.4,hp:215,speed:1.3,pw:27,veh:1,idle:'angry',enrage:1,
@@ -76,7 +84,7 @@ const RIGS={
   king:[RG('barrel','recoil','back',[.7,.33],[[.7,.23],[.89,.23],[.89,.43],[.7,.43]]),RG('crown','hop','front',[.585,.17],[[.455,0],[.715,0],[.715,.175],[.455,.175]])]
 };
 Object.keys(RIGS).forEach(k=>{CH[k].rig=RIGS[k]});
-const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo'];
+const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','blot','pin','clip','sharp','scis','glue','eraser'];
 // роли для своих рисунков
 const ARCH={
   fighter:{name:'Боец',desc:'дерётся вблизи',hp:130,speed:2.3,pw:12,idle:'breathe',atk:{k:'melee',cd:.8,dmg:18,fx:'punch'}},
@@ -213,7 +221,7 @@ function renderLib(){
   const lib=$('lib');lib.textContent='';
   const inPath=S.set.mode==='path';
   library.forEach(it=>{
-    if(isEgg(it)||(inPath&&!pathOwns(it)))return; // яйцо ещё не герой; в пути только свои герои
+    if(isEgg(it)||(inPath&&(!pathOwns(it)||pathH(it.id).ko)))return; // яйцо ещё не герой; в пути только свои герои
     const b=document.createElement('button');b.className='item';b.type='button';
     b.setAttribute('aria-pressed',selected===it?'true':'false');b.title=it.name+': '+it.D.desc;
     const im=document.createElement('img');im.src=it.src;im.alt='';
@@ -233,7 +241,7 @@ function hintText(){
   const m=S.set.mode;
   if(m==='duel')return duelPhase===0?'Ставят синие. Красные, не подглядывайте!':'Ставят красные. Синие, не подглядывайте!';
   if(m==='camp')return 'Уровень '+(camp.i+1)+'. Собери команду не сильнее '+camp.budget+'.';
-  if(m==='path')return path.stage===0&&!PS().st[0]?'Перетащи своего монстрика на нижнюю половину листа и жми «В бой!»':'Поставь до трёх своих монстриков на нижнюю половину и жми «В бой!»';
+  if(m==='path')return !PS().nd[0]?'Перетащи своего монстрика на нижнюю половину листа и жми «В бой!»':'Поставь до трёх своих монстриков на нижнюю половину и жми «В бой!»';
   return 'Перетащи героев на лист. Тапни героя, чтобы менять размер.';
 }
 function renderInfo(){
