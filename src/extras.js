@@ -681,7 +681,7 @@ async function galPreload(){
 }
 
 /* ---------- кампания: карта альбома, который стирает Ластик; дом-полянка, гнездо, доска, краски и улучшения ---------- */
-const path={node:0,stars:0,tab:'inc',foeLvl:1,news:[]};
+const path={node:0,stars:0,tab:'map',foeLvl:1,news:[]};
 const STARTERS=['d-king','d-dino','d-golem'];
 const FALL={blot:'black',pin:'teeth',clip:'blade',sharp:'saw',scis:'rider',glue:'purple',eraser:'fort'}; // пока нет рисунка врага — стёртый герой
 // t: b — бой, c — сундук с красками, h — герой в беде, n — гнездо, boss — логово. x,y — место на карте в процентах
@@ -997,7 +997,7 @@ function tabSync(){
   document.querySelectorAll('#tabbar button').forEach(b=>{b.classList.toggle('dot',!!p.own.length&&!!dots[b.dataset.t]);b.setAttribute('aria-pressed',String(b.dataset.t===cur))});
 }
 function tabOpen(t){
-  if(state==='battle')return;const p=PS();
+  if(state==='battle')return;const p=PS();if(!TABN[t])t='map';
   if(t!=='play'&&S.set.mode!=='path'){path.tab=t;$('meta').hidden=true;S.set.mode='path';applyMode();saveState();renderMenu();return}
   if(t!=='play'&&!p.own.length){introOpen();return}
   if(state==='over')setState('setup');
@@ -1005,7 +1005,7 @@ function tabOpen(t){
 }
 function tabRender(){
   if($('meta').hidden){tabSync();return}
-  const p=PS(),t=path.tab||'map',isMap=t==='map';
+  if(!TABN[path.tab])path.tab='map';const p=PS(),t=path.tab,isMap=t==='map';
   $('tPaint').textContent='🎨 '+p.paint;$('tGem').textContent='✨ '+p.gem;$('tTitle').textContent=isMap?PAGES[p.pg].n:TABN[t];
   $('pgRow').hidden=$('mapWrap').hidden=!isMap;if(!isMap)$('mapPre').hidden=true;$('tabBody').hidden=isMap;
   clearInterval(tabTimer);clearInterval(yardTimer);
