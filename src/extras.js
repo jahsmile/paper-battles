@@ -1233,3 +1233,16 @@ $('mReset').onclick=()=>{
   clearTimeout(resetT);resetT=0;b.textContent='Начать приключение заново';
   S.path={};path.node=0;path.news=[];path.tab='map';$('meta').hidden=true;saveState();$('menu').hidden=true;S.set.mode='path';applyMode();renderMenu();toast('Приключение начато заново');
 };
+
+// ----- загрузка: карандаш дорисовывает линию по мере того, как подгружаются картинки
+(function(){
+  const line=$('ldLine'),pen=$('ldPen'),txt=$('ldText');if(!line){return}
+  const says=['Точим карандаши…','Будим монстриков…','Прячем альбом от Ластика…','Раскрашиваем карту…','Считаем блёстки…'];let si=Math.random()*says.length|0;
+  const say=()=>{txt.textContent=says[si++%says.length]};say();const st=setInterval(say,1400);
+  const p=S.path||{},srcs=['assets/map'+PAGES[p.pg||0].map+'.webp','assets/chest_w.webp'],ims=library.filter(i=>!i.custom&&i.base&&i.base.img).map(i=>i.base.img).concat(srcs.map(loadImg));
+  let done=0,off=false;const set=v=>{line.style.animation=pen.style.animation='none';line.style.strokeDashoffset=100-v;pen.style.offsetDistance=v+'%'};
+  const fin=()=>{if(off)return;off=true;clearInterval(st);set(100);setTimeout(window.ldOff,350)};
+  const step=()=>{done++;set(Math.max(30,Math.round(done/ims.length*100)));if(done>=ims.length)(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fin,fin)};
+  ims.forEach(im=>{if(im.complete)step();else{im.addEventListener('load',step);im.addEventListener('error',step)}});
+  setTimeout(fin,9000);
+})();

@@ -222,6 +222,20 @@ body[data-mode="path"] footer .actions{order:1}body[data-mode="path"] footer #li
 @keyframes upPop{0%{transform:scale(1)}30%{transform:scale(1.25) translateY(-8px);filter:brightness(1.5)}60%{transform:scale(.95)}100%{transform:scale(1)}}
 @keyframes upPopBig{0%{transform:scale(1)}25%{transform:scale(1.5) translateY(-14px) rotate(-6deg);filter:brightness(1.9)}50%{transform:scale(1.2) rotate(5deg);filter:brightness(1.3)}75%{transform:scale(.94)}100%{transform:scale(1)}}
 @keyframes upGlow{0%{box-shadow:0 0 0 0 rgba(255,210,63,.95)}100%{box-shadow:0 0 0 26px rgba(255,210,63,0)}}
+#loader{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:#2c3e4d radial-gradient(circle at 30% 0%,#3a4e5f 0,#2c3e4d 55%,#22313d 100%);transition:opacity .45s}
+#loader.off{opacity:0;pointer-events:none}
+.ldcard{width:min(300px,82vw);background:#fbfaf4;color:#2a2a33;border:3px solid #2a2a33;border-radius:16px 22px 14px 24px/20px 14px 24px 16px;padding:14px 16px 12px;box-shadow:5px 8px 0 rgba(0,0,0,.35);transform:rotate(-1.5deg);display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--display,inherit)}
+.ldlogo{font-size:30px;line-height:1.1}.ldlogo span{color:#e2572b}.ldtext{font-size:18px;min-height:24px;text-align:center;font-family:var(--body,inherit)}
+.ldcard svg{width:100%;height:auto;overflow:visible;stroke:#2a2a33;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ldcard svg circle{fill:#2a2a33;stroke:none}.ldbase{fill:none;stroke:#d9d6ca;stroke-dasharray:1 7}
+.ldline{fill:none;stroke:#e2572b;stroke-width:4;stroke-dasharray:100;stroke-dashoffset:100;animation:ldDraw 9s cubic-bezier(.1,.6,.3,1) both}
+.ldpen{offset-path:path("M14 118 q14 -20 28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0");offset-rotate:0deg;offset-distance:0%;animation:ldPen 9s cubic-bezier(.1,.6,.3,1) both}
+.ldpen>g{animation:ldWig .28s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
+.ldmon{animation:ldHop 1s ease-in-out infinite}.ldmon.m2{animation-delay:.16s}.ldmon.m3{animation-delay:.32s}
+@keyframes ldDraw{to{stroke-dashoffset:30}}@keyframes ldPen{to{offset-distance:70%}}
+@keyframes ldWig{from{transform:rotate(31deg)}to{transform:rotate(39deg)}}
+@keyframes ldHop{0%,55%,100%{transform:translateY(0)}25%{transform:translateY(-16px) rotate(-3deg)}40%{transform:translateY(2px) scaleY(.94)}}
+@media (prefers-reduced-motion:reduce){.ldmon,.ldpen>g{animation:none}}
 .yard{flex:1 1 auto;position:relative;min-height:120px;margin:6px 8px 0}
 .mon{position:absolute;width:20%;max-width:110px;aspect-ratio:1;background:none;border:0;padding:0;cursor:pointer;transition:left 2.4s linear,top 2.4s linear;animation:monHop .7s ease-in-out infinite}
 .mon img{width:100%;height:100%;object-fit:contain;display:block}.mon.flip img{transform:scaleX(-1)}
@@ -358,6 +372,18 @@ body[data-mode="path"] footer .actions{order:1}body[data-mode="path"] footer #li
 </style>
 </head>
 <body data-state="setup">
+<div id="loader"><div class="ldcard">
+  <div class="ldlogo">Бумажные <span>бои</span></div>
+  <svg viewBox="0 0 224 150" aria-hidden="true">
+    <g class="ldmon m1"><path d="M40 92q-16 0-15-17 1-19 16-19 15 0 16 19 1 17-17 17z" fill="#f28b82"/><circle cx="35" cy="72" r="3.2"/><circle cx="47" cy="72" r="3.2"/><path d="M34 81q7 6 14 0" fill="none"/><path d="M32 57l-4-8M49 57l4-8" fill="none"/></g>
+    <g class="ldmon m2"><path d="M112 92q-20 0-19-15 0-23 19-23 19 0 19 23 1 15-19 15z" fill="#8fd66a"/><circle cx="104" cy="70" r="3.2"/><circle cx="112" cy="66" r="3.2"/><circle cx="120" cy="70" r="3.2"/><path d="M103 80q9 7 18 0" fill="none"/></g>
+    <g class="ldmon m3"><path d="M184 92q-15 0-15-14 0-10 5-20l5 8 5-10 5 10 5-8q5 10 5 20 0 14-15 14z" fill="#9bd0ff"/><circle cx="178" cy="74" r="3.2"/><circle cx="190" cy="74" r="3.2"/><path d="M178 83h12" fill="none"/></g>
+    <path class="ldbase" d="M14 118 q14 -20 28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0"/><path class="ldline" id="ldLine" pathLength="100" d="M14 118 q14 -20 28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0"/>
+    <g class="ldpen" id="ldPen"><g transform="rotate(35)"><polygon points="0,0 -5,-11 5,-11" fill="#f1d7a8"/><polygon points="0,0 -2,-4.5 2,-4.5" fill="#2a2a33"/><rect x="-5" y="-44" width="10" height="33" fill="#ffd23f"/><rect x="-5" y="-52" width="10" height="8" rx="2" fill="#f28b82"/><path d="M-5 -44h10" fill="none"/></g></g>
+  </svg>
+  <div class="ldtext" id="ldText">&nbsp;</div>
+</div></div>
+<script data-ld>window.ldOff=function(){var l=document.getElementById('loader');if(!l||l.className)return;l.className='off';setTimeout(function(){l.remove()},500)};setTimeout(window.ldOff,15000);</script>
 <header>
   <h1>Бумажные <span>бои</span></h1>
   <div class="tools">
