@@ -43,6 +43,8 @@ const CH={
     atk:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09},melee:{cd:2.4,dmg:20,fx:'tail',part:'tail',aoe:1.4,push:1.6},muz:[[.82,.11]],lines:L(['Тра-та-та!'],['Ура!'],['Ой-ой!'],['Я самый быстрый!'])},
   duo:{name:'Двупушка',tag:'ворчун с двумя пушками',desc:'Верхняя пушка по очереди бьёт огнём, льдом, ядом и ядерным зарядом. Нижняя строчит пулями.',H:3.1,hp:300,speed:1.2,pw:30,veh:1,idle:'rumble',
     atk:{k:'shell',range:7.5,cd:2.4,dmg:26,blast:1.4,ammo:['fire','ice','poison','nuke'],mi:0},far:{k:'burst',range:6.5,cd:1.5,dmg:8,n:4,gap:.09,mi:1},muz:[[.88,.21],[.985,.555]],lines:L(['Сейчас как бахну!'],['Готов!'],['Эй, полегче!'],['Обе пушки молодцы.'])},
+  tking:{name:'Король танков',tag:'царь всех танков',desc:'Из большой пушки швыряет огромный динамит, а мелкие пушки строчат пулями. Рядом с ним свои дерутся сильнее.',H:4.3,hp:760,speed:.7,pw:44,veh:1,heavy:1,idle:'rumble',aura:3.5,
+    atk:{k:'shell',range:8.5,cd:3.2,dmg:30,blast:1.5,ammo:['dyn'],mi:0},far:{k:'burst',range:6.5,cd:1.7,dmg:7,n:5,gap:.08,mi:1},muz:[[.985,.23],[.93,.6]],lines:L(['Я король танков!'],['Склонитесь!'],['Корону не трогать!'],['Динамит решает.'])},
   // слуги Ластика: канцелярские злодеи
   blot:{name:'Клякса',tag:'слуга Ластика',desc:'Слуга Ластика.',H:2.3,hp:150,speed:2.4,pw:13,idle:'wobble',atk:{k:'melee',cd:.7,dmg:16,fx:'punch'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
   pin:{name:'Кнопка',tag:'слуга Ластика',desc:'Слуга Ластика.',H:1.7,hp:90,speed:3.2,pw:10,idle:'hop',atk:{k:'melee',cd:.5,dmg:12,fx:'claw'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
@@ -72,6 +74,8 @@ const RIGS={
   blade:[RG('barrel','recoil','back',[.66,.33],[[.66,.2],[1,.16],[1,.5],[.66,.45]])],
   witch:[RG('armL','swing','front',[.2,.34],[[.08,.3],[.25,.3],[.235,.5],[.21,.98],[0,.98],[0,.45]]),RG('armR','swing','front',[.63,.31],[[.58,.26],[.76,.3],[.96,.7],[1,.76],[1,.9],[.75,.9],[.73,.6],[.67,.42]])],
   fort:[RG('crown','hop','front',[.27,.25],[[.135,.06],[.215,0],[.33,0],[.33,.25],[.215,.25],[.215,.15],[.135,.15]]),RG('gun','recoil','back',[.67,.23],[[.66,.17],[.845,.15],[.845,.29],[.66,.28]])],
+  tking:[RG('crown','hop','front',[.53,.16],[[.41,0],[.65,0],[.65,.165],[.41,.165]]),RG('gun','recoil','back',[.64,.24],[[.64,.15],[1,.15],[1,.32],[.64,.32]]),
+    RG('guns','recoil','back',[.8,.55],[[.7,.4],[.8,.36],[.96,.55],[.95,.72],[.86,.76]])],
   duo:[RG('top','hop','front',[.15,.38],[[.07,.02],[.7,.02],[.78,0],[.9,.1],[.9,.32],[.8,.39],[.74,.38],[.74,.49],[.22,.49],[.2,.38],[.14,.38]]),RG('gun','recoil','front',[.72,.55],[[.72,.49],[1,.5],[1,.61],[.72,.6]]),
     RG('clawL','swing','back',[.13,.6],[[0,.56],[.13,.56],[.15,.66],[.1,.96],[.02,.96]],-25,25),RG('clawR','swing','front',[.84,.68],[[.83,.63],[1,.66],[1,1],[.9,1],[.8,.73]],-25,25)],
   dino:[RG('tail','wag','back',[.37,.52],[[0,0],[.12,0],[.4,.42],[.39,.62],[.3,.6],[0,.2]],-86,86),RG('turret','recoil','front',[.55,.25],[[.4,0],[.84,0],[.84,.22],[.68,.275],[.4,.275]])],
@@ -84,7 +88,7 @@ const RIGS={
   king:[RG('barrel','recoil','back',[.7,.33],[[.7,.23],[.89,.23],[.89,.43],[.7,.43]]),RG('crown','hop','front',[.585,.17],[[.455,0],[.715,0],[.715,.175],[.455,.175]])]
 };
 Object.keys(RIGS).forEach(k=>{CH[k].rig=RIGS[k]});
-const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','blot','pin','clip','sharp','scis','glue','eraser'];
+const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','blot','pin','clip','sharp','scis','glue','eraser'];
 // роли для своих рисунков
 const ARCH={
   fighter:{name:'Боец',desc:'дерётся вблизи',hp:130,speed:2.3,pw:12,idle:'breathe',atk:{k:'melee',cd:.8,dmg:18,fx:'punch'}},
@@ -584,10 +588,11 @@ function fireSuper(u){
   }
   return true;
 }
-const AMMO={fire:{burn:3,col:'#ff5a1f'},ice:{freeze:3,col:'#8fd3ff'},poison:{poison:5,col:'#4caf2a',dk:.7},nuke:{nuke:1,col:'#ffe24a',dk:1.7,bk:2.1}};
+const AMMO={fire:{burn:3,col:'#ff5a1f'},ice:{freeze:3,col:'#8fd3ff'},poison:{poison:5,col:'#4caf2a',dk:.7},nuke:{nuke:1,col:'#ffe24a',dk:1.7,bk:2.1},dyn:{dyn:1,col:'#d8262b',dk:1.8,bk:1.9}};
 function explode(x,y,rad,dmg,team,o={}){
   units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze;if(o.poison&&!q.dead){q.poisT=o.poison;q.poisD=dmg*.22;q.poisBy=o.by}}});
-  fx.push({k:'boom',x,y,t:0,life:o.nuke?.6:.35,r:rad,col:o.freeze?'#8fd3ff':o.plasma?'#b63ad6':o.poison?'#6bd13a':o.nuke?'#ffe24a':'#ff8a1f',col2:o.freeze?'#ffffff':o.plasma?'#f0b8ff':o.poison?'#d8ffb0':o.nuke?'#ffffff':MARKER});
+  fx.push({k:'boom',x,y,t:0,life:o.nuke?.6:o.dyn?.5:.35,r:rad,col:o.freeze?'#8fd3ff':o.plasma?'#b63ad6':o.poison?'#6bd13a':o.nuke?'#ffe24a':'#ff8a1f',col2:o.freeze?'#ffffff':o.plasma?'#f0b8ff':o.poison?'#d8ffb0':o.nuke?'#ffffff':MARKER});
+  if(o.dyn)word('БА-БАХ!',x,y-base,1.5);
   if(o.nuke){ // гриб: столб дыма вверх и шапка
     shake=Math.max(shake,12);sfx('boom');word('БА-БАХ!',x,y-rad,1.6);fx.push({k:'ring',x,y:y+base*.3,t:0,life:.6,r:rad*1.6});
     for(let i=0;i<14;i++)smoke(x+rnd(-.2,.2)*rad,y-i*rad*.09,rnd(-.4,.4)*base,-base*rnd(2.5,5),base*rnd(.5,.9),'rgba(90,90,100,.55)');
@@ -684,7 +689,7 @@ function fire(u,t,A,foes,key){
     if(A.k==='shell'){
       // пушка с разными зарядами: огонь, лёд, яд, ядерный — по очереди
       const am=A.ammo?AMMO[A.ammo[u.ammoI=((u.ammoI==null?-1:u.ammoI)+1)%A.ammo.length]]:A,col=am.col||A.col;
-      shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg()*(am.dk||1),blast:A.blast*base*u.bl*(am.bk||1),team:u.team,freeze:am.freeze,burn:am.burn,poison:am.poison,nuke:am.nuke,col,by:u,sm:0,sz:u.bl*(am.nuke?1.5:1)});
+      shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg()*(am.dk||1),blast:A.blast*base*u.bl*(am.bk||1),team:u.team,freeze:am.freeze,burn:am.burn,poison:am.poison,nuke:am.nuke,dyn:am.dyn,col,by:u,sm:0,sz:u.bl*(am.nuke?1.5:am.dyn?2.6:1)});
       fx.push({k:'flash',x:m.x,y:m.y,t:0,life:.14,rot:a,s:u.bl,col});
       for(let j=0;j<4;j++)smoke(m.x,m.y,Math.cos(a)*base*rnd(1,3.5),Math.sin(a)*base*2-base*rnd(.4,1.4),base*rnd(.25,.5)*u.bl);
       sfx('cannon',.04);shake=Math.max(shake,2+u.s);
@@ -1153,7 +1158,12 @@ function drawFx(f){
 }
 function drawShot(s){
   ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.a);ctx.strokeStyle=PENCIL;ctx.lineCap='round';const z=base*(s.sz||1);
-  if(s.k==='shell'){ctx.fillStyle=s.col||'#3d3d49';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,z*.34,z*.19,0,0,7);ctx.fill();ctx.stroke()}
+  if(s.dyn){ // огромная динамитная шашка с горящим фитилём
+    ctx.rotate(Math.sin(s.x*.05)*.5);ctx.lineWidth=2;ctx.fillStyle='#d8262b';ctx.beginPath();ctx.rect(-z*.42,-z*.16,z*.84,z*.32);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd23f';ctx.fillRect(-z*.2,-z*.16,z*.09,z*.32);ctx.fillRect(z*.11,-z*.16,z*.09,z*.32);
+    ctx.beginPath();ctx.moveTo(-z*.42,0);ctx.quadraticCurveTo(-z*.55,-z*.2,-z*.66,-z*.05);ctx.stroke();
+    ctx.fillStyle=Math.random()<.5?'#ffe24a':'#ff8a1f';ctx.beginPath();ctx.arc(-z*.66,-z*.05,z*(.07+Math.random()*.06),0,7);ctx.fill();
+  }else if(s.k==='shell'){ctx.fillStyle=s.col||'#3d3d49';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,z*.34,z*.19,0,0,7);ctx.fill();ctx.stroke()}
   else if(s.k==='rocket'){
     ctx.fillStyle='#ff8a1f';ctx.beginPath();ctx.moveTo(-z*.45,-z*.1);ctx.lineTo(-z*(.75+Math.random()*.25),0);ctx.lineTo(-z*.45,z*.1);ctx.fill();
     ctx.fillStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.rect(-z*.45,-z*.13,z*.6,z*.26);ctx.fill();ctx.stroke();
