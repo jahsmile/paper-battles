@@ -818,16 +818,16 @@ function pathFinish(won){
   let pay=won?8:3;
   if(won){
     const all=mineQ.length,left=units.filter(u=>u.team===0&&!u.dead).length,old=p.nd[n.key]||0,first=!old,kills=units.filter(u=>u.team===0).reduce((a,u)=>a+u.kills,0);
-    path.stars=left>=all?3:left*2>=all?2:1;p.nd[n.key]=Math.max(old,path.stars);if(path.stars>old){p.gem+=path.stars-old;extra.push('✨ +'+(path.stars-old))}
+    path.stars=left>=all?3:left*2>=all?2:1;p.nd[n.key]=Math.max(old,path.stars);if(path.stars>old){p.gem+=path.stars-old;path.gemWon=path.stars-old;extra.push('✨ +'+(path.stars-old))}
     qAdd('w',1);qAdd('k',kills);if(left>=all)qAdd('f',1);
     p.wins++;p.ms.w++;p.ms.k+=kills;if(left>=all)p.ms.f++;
     if(first){pay=n.paint||20;
       if(n.hero&&!p.own.includes(n.hero)&&library.some(q=>q.id===n.hero)){p.own.push(n.hero);path.news.push(n.hero)}
       if(n.t==='boss'){extra.push('Страница спасена!');if(p.pg<PAGES.length-1)extra.push('Открыта следующая страница')}if(n.post)path.after=n.post;}
     const ck=first?(n.t==='boss'?(n.key>=100?'e':'g'):Math.random()<.25?'s':'w'):Math.random()<.35?'w':null;
-    if(ck)extra.push(chestAdd(ck)?'Добыча'+': '+CHT[ck].n:'Для сундука нет места');
+    if(ck){const got=chestAdd(ck);extra.push(got?'Добыча'+': '+CHT[ck].n:'Для сундука нет места');if(got)path.chestWon=ck}
   }
-  path.lost=!won;p.paint+=pay;if(!won)extra.push('Враги пока сильнее: улучши монстриков, открой сундуки или сходи в рейд');
+  path.lost=!won;p.paint+=pay;path.fly={paint:pay,xp:won?1:0};if(!won)extra.push('Враги пока сильнее: улучши монстриков, открой сундуки или сходи в рейд');
   if(!pathRoster().some(it=>!pathH(it.id).ko)){Object.values(p.h).forEach(h=>{h.ko=0})}
   else if(dead.length)extra.push('Стёрты и пропустят один бой'+': '+dead.map(id=>{const it=library.find(q=>q.id===id);return it?it.name:''}).filter(Boolean).join(', '));
   return{title:won?'Победа!':'Не вышло',text:'Опыт'+' +'+gain+' · 🎨 +'+pay+(extra.length?' · '+extra.join(' · '):'')+(ups.length?' · '+ups.join(' · '):''),again:'Дальше'};
@@ -864,7 +864,7 @@ function missions(){const m=PS().ms,s=m.set;return[
   {t:'Победи на карте',n:m.w,g:2+s},{t:'Победи, не потеряв ни одного монстрика',n:m.f,g:1+(s>>1)},{t:'Одолей врагов',n:m.k,g:5+2*s}]}
 function missionClaim(i){
   const p=PS(),ms=missions();if(p.ms.got[i]||ms[i].n<ms[i].g)return;p.ms.got[i]=1;p.paint+=25;p.gem+=2;
-  const ups=[];pathRoster().forEach(it=>pathXp(it.id,40,ups));toast('Опыт'+' +40 · 🎨 +25 · ✨ +2'+(ups.length?' · '+ups.join(' · '):''));sfx('win');
+  const ups=[];pathRoster().forEach(it=>pathXp(it.id,40,ups));toast('Опыт'+' +40 · 🎨 +25 · ✨ +2'+(ups.length?' · '+ups.join(' · '):''));sfx('win');flyLoot({paint:25,gem:2,xp:1},{left:innerWidth/2,top:innerHeight/2,width:0,height:0});
   if(p.ms.got.every(Boolean))p.ms={set:p.ms.set+1,w:0,f:0,k:0,got:[0,0,0]};
   saveState();tabRender();
 }
@@ -880,7 +880,7 @@ function heroCard(it,plain){
 }
 // карточка монстрика: звёзды за обрывки, ветки улучшений за краски
 function monOpen(it,note){
-  const p=PS(),h=pathH(it.id),st=hStar(h),box=$('monCard');box.textContent='';if(note)box.append(el('p','hubnote',note));box.append(heroCard(it));
+  const p=PS(),h=pathH(it.id),st=hStar(h),box=$('monCard');clearTimeout(lootT);lootChips=[];$('monOk').style.visibility='';box.textContent='';if(note)box.append(el('p','hubnote',note));box.append(heroCard(it));
   if(!note){
     const again=()=>{saveState();sfx('pop');monOpen(it);tabRender()};
     if(h.ko){const b=el('button','btn mark','Раскрасить заново'+' · 🎨 10');b.type='button';b.disabled=p.paint<10;b.onclick=()=>{p.paint-=10;h.ko=0;again()};box.append(b)}
@@ -913,14 +913,42 @@ function chestRoll(k){
 }
 function chestAdd(k){const p=PS();if(p.ch.length>=4)return false;p.ch.push({k,at:Date.now()});return true}
 function lootGive(L){const p=PS();p.paint+=L.paint||0;p.gem+=L.gem||0;p.wild+=L.wild||0;for(const id in L.sh||{})p.sh[id]=(p.sh[id]||0)+L.sh[id];saveState()}
+// ----- награды летят туда, где они лежат: краски и блёстки в шапку, обрывки к монстрикам, сундуки на вкладку
+const FLYTO={paint:'#tPaint',gem:'#tGem',wild:'#tabbar [data-t=heroes]',sh:'#tabbar [data-t=heroes]',xp:'#tabbar [data-t=heroes]',chest:'#tabbar [data-t=chests]'},FLYICO={paint:'🎨',gem:'✨',wild:'🌈',sh:'🧩',xp:'⭐',chest:'🎁'};
+function flyTo(kind,from,img,n){
+  const t=document.querySelector(FLYTO[kind]);if(!t||!t.getBoundingClientRect().width||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const r=t.getBoundingClientRect(),tx=r.left+r.width/2,ty=r.top+r.height/2,fx0=from.left+from.width/2,fy0=from.top+from.height/2;
+  for(let i=0;i<(n||5);i++){
+    const d=el(img?'img':'i','fly');if(img)d.src=img;else d.textContent=FLYICO[kind];document.body.append(d);
+    const sx=fx0+(Math.random()-.5)*70,sy=fy0+(Math.random()-.5)*50,mx=(sx+tx)/2+(Math.random()-.5)*160,my=Math.min(sy,ty)-40-Math.random()*90;
+    const a=d.animate([{transform:'translate('+fx0+'px,'+fy0+'px) translate(-50%,-50%) scale(.3)',opacity:0},{transform:'translate('+sx+'px,'+sy+'px) translate(-50%,-50%) scale(1.15)',opacity:1,offset:.18},
+      {transform:'translate('+mx+'px,'+my+'px) translate(-50%,-50%) scale(1)',opacity:1,offset:.6},{transform:'translate('+tx+'px,'+ty+'px) translate(-50%,-50%) scale(.45)',opacity:.9}],{duration:750+Math.random()*250,delay:i*70,easing:'cubic-bezier(.4,0,.6,1)',fill:'both'});
+    a.onfinish=()=>{d.remove();t.classList.remove('bump');void t.offsetWidth;t.classList.add('bump');if(i===0)sfx('pop',.02)};
+  }
+}
+function flyLoot(L,from){ // всё заработанное разлетается из одной точки
+  if(L.paint)flyTo('paint',from,null,Math.min(8,3+(L.paint>>5)));if(L.gem)flyTo('gem',from,null,Math.min(6,2+L.gem));if(L.wild)flyTo('wild',from,null,3);if(L.xp)flyTo('xp',from,null,4);
+  for(const id in L.sh||{})flyTo('sh',from,null,3);if(L.chest)flyTo('chest',from,'assets/chest_'+L.chest+'.webp',1);
+}
+let lootChips=[],lootT=0;
 function lootShow(title,k,L){
-  lootGive(L);const box=$('monCard');box.textContent='';box.append(el('h2','',title));
-  if(k){const im=el('img','lootpic');im.src='assets/chest_'+k+'.webp';im.alt='';box.append(im)}
-  const g=el('div','loot'),chip=(ico,txt,img)=>{const d=el('div');if(img){const i=el('img');i.src=img;i.alt='';d.append(i)}else d.append(el('em','',ico));d.append(el('b','',txt));g.append(d);return d};
-  if(L.paint)chip('🎨','+'+L.paint);if(L.gem)chip('✨','+'+L.gem);if(L.wild)chip('🌈','+'+L.wild);if(L.xp)chip('⭐','Опыт'+' +'+L.xp);
-  for(const id in L.sh||{}){const it=library.find(q=>q.id===id);if(it)chip('','🧩 +'+L.sh[id],it.src).append(el('small','',it.name))}
-  if(L.chest)chip('','+1','assets/chest_'+L.chest+'.webp').append(el('small','',CHT[L.chest].n));
-  box.append(g);$('mon').hidden=false;sfx('win');tabRender();
+  lootGive(L);const box=$('monCard'),ok=$('monOk');ok.style.visibility='';box.textContent='';box.append(el('h2','',title));lootChips=[];clearTimeout(lootT);
+  const g=el('div','loot'),chip=(kind,ico,txt,img)=>{const d=el('div');if(img){const i=el('img');i.src=img;i.alt='';d.append(i)}else d.append(el('em','',ico));d.append(el('b','',txt));g.append(d);lootChips.push([d,kind,kind==='chest'?img:null]);return d};
+  if(L.paint)chip('paint','🎨','+'+L.paint);if(L.gem)chip('gem','✨','+'+L.gem);if(L.wild)chip('wild','🌈','+'+L.wild);if(L.xp)chip('xp','⭐','Опыт'+' +'+L.xp);
+  for(const id in L.sh||{}){const it=library.find(q=>q.id===id);if(it)chip('sh','','🧩 +'+L.sh[id],it.src).append(el('small','',it.name))}
+  if(L.chest)chip('chest','','+1','assets/chest_'+L.chest+'.webp').append(el('small','',CHT[L.chest].n));
+  $('mon').hidden=false;tabRender();
+  if(!k||matchMedia('(prefers-reduced-motion:reduce)').matches){if(k){const im=el('img','lootpic');im.src='assets/chest_'+k+'.webp';im.alt='';box.append(im)}box.append(g);sfx('win');return}
+  // сундук трясётся, лопается лучами и звёздами, потом выпадают награды
+  const st=el('div','chestfx'),rays=el('i'),im=el('img');im.src='assets/chest_'+k+'.webp';im.alt='';st.append(rays,im);box.append(st,el('p','hubnote chesthint','Тапни, чтобы открыть'));ok.style.visibility='hidden';sfx('pop');
+  const open=()=>{
+    if(st.classList.contains('open'))return;clearTimeout(lootT);st.classList.add('open');st.onclick=null;const h=box.querySelector('.chesthint');if(h)h.remove();sfx('win');
+    const r=im.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    for(let i=0;i<16;i++){const d=el('i','fly');d.textContent='★✨●'[i%3];d.style.color=['#ffd23f','#e2572b','#2f6fe0','#6bd13a'][i%4];document.body.append(d);const an=Math.PI*2*i/16+Math.random()*.4,ds=90+Math.random()*120;
+      d.animate([{transform:'translate('+cx+'px,'+cy+'px) translate(-50%,-50%) scale(.4)',opacity:1},{transform:'translate('+(cx+Math.cos(an)*ds)+'px,'+(cy+Math.sin(an)*ds)+'px) translate(-50%,-50%) scale(1.2) rotate(200deg)',opacity:0}],{duration:650+Math.random()*300,easing:'cubic-bezier(.1,.7,.3,1)',fill:'both'}).onfinish=()=>d.remove()}
+    lootT=setTimeout(()=>{box.append(g);ok.style.visibility=''},380);
+  };
+  st.onclick=open;lootT=setTimeout(open,1300);
 }
 function chestOpen(i){const p=PS(),c=p.ch[i];if(!c||chLeft(c)>0)return;p.ch.splice(i,1);qAdd('c',1);lootShow(CHT[c.k].n,c.k,chestRoll(c.k))}
 // ----- день: задания, подарок, рейды, лавка
@@ -970,7 +998,8 @@ function tabRender(){
   $('pgRow').hidden=$('mapWrap').hidden=!isMap;if(!isMap)$('mapPre').hidden=true;$('tabBody').hidden=isMap;
   clearInterval(tabTimer);clearInterval(yardTimer);
   $('mapUp').hidden=true;if(isMap)mapDraw();else{const box=$('tabBody'),y=box.scrollTop;box.textContent='';({heroes:tabHeroes,chests:tabChests,quests:tabQuests,play:tabPlay})[t](box,p);box.scrollTop=y}
-  tabSync();setTimeout(coachCheck,400);
+  const flew=!!(path.fly&&isMap);if(flew){const f=path.fly,c={left:innerWidth/2,top:innerHeight/2,width:0,height:0};path.fly=null;if(path.chestWon){f.chest=path.chestWon;path.chestWon=null}if(path.gemWon){f.gem=path.gemWon;path.gemWon=0}setTimeout(()=>flyLoot(f,c),350)}
+  tabSync();setTimeout(coachCheck,flew?1500:400);
 }
 function tabHeroes(box,p){
   const yard=el('div','yard'),own=pathRoster();
@@ -1056,7 +1085,10 @@ function hubOpen(tab){tabOpen(tab==='inc'||tab==='heroes'?'heroes':'quests')}
 $('hubBtn').onclick=()=>{if(state==='battle')return;tabOpen('map')};
 $('incNo').onclick=()=>{$('incAsk').hidden=true};
 $('incOk').onclick=()=>{$('incAsk').hidden=true;$('meta').hidden=true;tabSync();incub=true;$('file').click()};
-$('monOk').onclick=()=>{$('mon').hidden=true;setTimeout(coachCheck,250)};
+$('monOk').onclick=()=>{
+  const fl=lootChips.filter(c=>c[0].isConnected).map(c=>[c[1],c[0].getBoundingClientRect(),c[2]]);lootChips=[];$('mon').hidden=true;
+  fl.forEach(([kind,r,img])=>flyTo(kind,r,img,kind==='chest'?1:kind==='paint'?6:4));setTimeout(coachCheck,fl.length?1100:250);
+};
 // ----- сценки с диалогами
 let sceneQ=[],sceneDone=null;
 function scene(key,done){
@@ -1147,7 +1179,7 @@ function nodeTap(n){
   const p=PS(),done=!!p.nd[n.key];
   if(!nodeOpen(n)){toast('Сюда пока не пройти: сначала расчисти дорогу');return}
   if(n.t==='c'){if(done)return;p.nd[n.key]=1;
-    if(n.chest)lootShow(CHT[n.chest].n,n.chest,chestRoll(n.chest));else{p.paint+=n.paint;saveState();sfx('win');toast('В сундуке краски'+': 🎨 +'+n.paint);tabRender()}return}
+    if(n.chest)lootShow(CHT[n.chest].n,n.chest,chestRoll(n.chest));else lootShow('Находка',null,{paint:n.paint});return}
   if(n.t==='h'){if(done)return;
     if(p.own.includes(n.hero)){p.nd[n.key]=1;lootShow('Обрывки',null,{sh:{[n.hero]:15}});return}
     scene(n.pre,()=>{p.nd[n.key]=1;p.own.push(n.hero);path.news=[n.hero];saveState();tabRender()});return}

@@ -208,6 +208,14 @@ body[data-mode="path"] footer .actions{order:1}body[data-mode="path"] footer #li
   #coachBox{width:380px;font-size:26px}#coachBox small{font-size:21px}
 }
 @media (prefers-reduced-motion:reduce){.node.cur,.node.cur::after,#pgNext.next,#mapUp,#fight.pulse,#coachRing,.talkbox{animation:none}}
+.fly{position:fixed;left:0;top:0;z-index:70;pointer-events:none;font-style:normal;font-size:30px;line-height:1;width:auto;will-change:transform}img.fly{width:46px;height:40px;object-fit:contain}
+.bump{animation:bump .35s ease-out}@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
+.chestfx{position:relative;align-self:center;width:190px;height:170px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.chestfx img{position:relative;width:150px;height:130px;object-fit:contain;animation:chestShake .26s ease-in-out infinite}
+.chestfx i{position:absolute;inset:-40px;border-radius:50%;background:repeating-conic-gradient(#ffe680 0 12deg,transparent 12deg 30deg);opacity:0;-webkit-mask:radial-gradient(circle,#000 30%,transparent 68%);mask:radial-gradient(circle,#000 30%,transparent 68%)}
+.chestfx.open img{animation:chestPop .45s ease-out both}.chestfx.open i{animation:cardRays 5s linear both}
+@keyframes chestShake{0%,100%{transform:rotate(-7deg) scale(1)}25%{transform:rotate(6deg) scale(1.05) translateY(-4px)}50%{transform:rotate(-5deg) scale(1.02)}75%{transform:rotate(8deg) scale(1.07) translateY(-6px)}}
+@keyframes chestPop{0%{transform:scale(1)}35%{transform:scale(1.5) rotate(-6deg);filter:brightness(1.8)}100%{transform:scale(.8);filter:none}}
 .yard{flex:1 1 auto;position:relative;min-height:120px;margin:6px 8px 0}
 .mon{position:absolute;width:20%;max-width:110px;aspect-ratio:1;background:none;border:0;padding:0;cursor:pointer;transition:left 2.4s linear,top 2.4s linear;animation:monHop .7s ease-in-out infinite}
 .mon img{width:100%;height:100%;object-fit:contain;display:block}.mon.flip img{transform:scaleX(-1)}
