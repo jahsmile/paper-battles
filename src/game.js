@@ -249,6 +249,7 @@ function hintText(){
   return 'Перетащи героев на лист. Тапни героя, чтобы менять размер.';
 }
 function renderInfo(){
+  $('fight').classList.toggle('pulse',S.set.mode==='path'&&state==='setup'&&units.some(u=>u.team===0));
   const t=$('infoText');t.textContent='';
   const setup=state==='setup',battle=state==='battle',tg=setup?(selU?selU.item:selP?PROPITEMS.find(p=>p.prop===selP.kind):selected):null;
   $('blotbar').hidden=!battle;$('bbar').hidden=!battle;$('hero').hidden=!setup;t.hidden=battle;
