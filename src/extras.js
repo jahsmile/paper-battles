@@ -878,21 +878,33 @@ function heroCard(it,plain){
   if(h.ko)c.append(el('small','','Стёрт: пропустит один бой'));
   return c;
 }
+// вспышка улучшения: монстрик подпрыгивает и светится, вокруг разлетаются искры, вверх всплывает надпись
+function upFx(text,big){
+  const c=$('monCard').querySelector('.hcard'),im=c&&c.querySelector('img');if(!im)return;sfx(big?'win':'pop');
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  c.classList.remove('upfx','upbig');void c.offsetWidth;c.classList.add('upfx');if(big)c.classList.add('upbig');
+  const r=im.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,n=big?22:12;
+  for(let i=0;i<n;i++){const d=el('i','fly');d.textContent=big?'★':'✦';d.style.color=big?['#ffd23f','#ff9d1f','#fff2a8'][i%3]:['#6bd13a','#2f6fe0','#ffd23f'][i%3];d.style.fontSize=(big?26:20)+'px';document.body.append(d);
+    const an=Math.PI*2*i/n+Math.random()*.4,ds=(big?110:70)+Math.random()*70;
+    d.animate([{transform:'translate('+cx+'px,'+cy+'px) translate(-50%,-50%) scale(.3)',opacity:1},{transform:'translate('+(cx+Math.cos(an)*ds)+'px,'+(cy+Math.sin(an)*ds-20)+'px) translate(-50%,-50%) scale(1.2) rotate(180deg)',opacity:0}],{duration:600+Math.random()*300,easing:'cubic-bezier(.1,.7,.3,1)',fill:'both'}).onfinish=()=>d.remove()}
+  const t=el('b','fly uptext',text);document.body.append(t);
+  t.animate([{transform:'translate('+cx+'px,'+cy+'px) translate(-50%,-50%) scale(.5)',opacity:0},{transform:'translate('+cx+'px,'+(cy-30)+'px) translate(-50%,-50%) scale(1.15)',opacity:1,offset:.25},{transform:'translate('+cx+'px,'+(cy-60)+'px) translate(-50%,-50%) scale(1)',opacity:1,offset:.75},{transform:'translate('+cx+'px,'+(cy-90)+'px) translate(-50%,-50%) scale(1)',opacity:0}],{duration:1300,fill:'both'}).onfinish=()=>t.remove();
+}
 // карточка монстрика: звёзды за обрывки, ветки улучшений за краски
 function monOpen(it,note){
   const p=PS(),h=pathH(it.id),st=hStar(h),box=$('monCard');clearTimeout(lootT);lootChips=[];$('monOk').style.visibility='';box.textContent='';if(note)box.append(el('p','hubnote',note));box.append(heroCard(it));
   if(!note){
-    const again=()=>{saveState();sfx('pop');monOpen(it);tabRender()};
+    const again=(txt,big)=>{saveState();monOpen(it);tabRender();if(txt)upFx(txt,big);else sfx('pop')};
     if(h.ko){const b=el('button','btn mark','Раскрасить заново'+' · 🎨 10');b.type='button';b.disabled=p.paint<10;b.onclick=()=>{p.paint-=10;h.ko=0;again()};box.append(b)}
     box.append(el('p','hubnote',h.l>=hCap(h)?'Уровень на пределе: нужна новая звезда.':'Опыт дают бои и рейды. Предел уровня'+': '+hCap(h)+(h.l<2?' · '+'Ур. 2: суперудар':h.l<3?' · '+'Ур. 3: вторая атака':h.l<6?' · '+'Ур. 6: третья атака':'')));
-    if(st<6){const need=SCOST[st-1],b=el('button','btn mark','Новая звезда'+' · 🧩 '+need);b.type='button';b.style.margin='0';b.disabled=!shCan(it,need);b.onclick=()=>{if(!shPay(it,need))return;h.s=st+1;qAdd('u',1);again()};
+    if(st<6){const need=SCOST[st-1],b=el('button','btn mark','Новая звезда'+' · 🧩 '+need);b.type='button';b.style.margin='0';b.disabled=!shCan(it,need);b.onclick=()=>{if(!shPay(it,need))return;h.s=st+1;qAdd('u',1);again('★ '+'Новая звезда!',true)};
       box.append(b,el('small','twhat','Звезда: +15% к силе и здоровью, предел уровня +10. Не хватает обрывков — добавятся радужные 🌈'+' ('+p.wild+').'))}
     const tr=el('div','tree');
     TREE.forEach(([k,nm,what])=>{
       const r=h.t[k],row=el('div','trow');row.append(el('b','',nm),el('span','pips',r+' / 10'));
       if(r>=10)row.append(el('small','','макс.'));
       else{const cost=TCOST[r],lv=r*4+1,lock=h.l<lv,b=el('button','btn sm '+(lock?'light':'mark'),lock?'ур.'+' '+lv:'🎨 '+cost);b.type='button';b.disabled=lock||p.paint<cost;b.title=nm+': +'+what;
-        b.onclick=()=>{p.paint-=cost;h.t[k]++;qAdd('u',1);again()};row.append(b)}
+        b.onclick=()=>{p.paint-=cost;h.t[k]++;qAdd('u',1);again('⬆ '+nm+' +1')};row.append(b)}
       tr.append(row,el('small','twhat','+'+what));
     });
     box.append(el('p','hubnote','Улучшения за краски'+' · 🎨 '+p.paint),tr);

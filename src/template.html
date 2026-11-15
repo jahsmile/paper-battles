@@ -216,6 +216,12 @@ body[data-mode="path"] footer .actions{order:1}body[data-mode="path"] footer #li
 .chestfx.open img{animation:chestPop .45s ease-out both}.chestfx.open i{animation:cardRays 5s linear both}
 @keyframes chestShake{0%,100%{transform:rotate(-7deg) scale(1)}25%{transform:rotate(6deg) scale(1.05) translateY(-4px)}50%{transform:rotate(-5deg) scale(1.02)}75%{transform:rotate(8deg) scale(1.07) translateY(-6px)}}
 @keyframes chestPop{0%{transform:scale(1)}35%{transform:scale(1.5) rotate(-6deg);filter:brightness(1.8)}100%{transform:scale(.8);filter:none}}
+.uptext{font-weight:400;font-size:26px;white-space:nowrap;color:#2a2a33;background:#ffe680;border:3px solid #2a2a33;border-radius:14px 9px 13px 8px/9px 13px 8px 14px;padding:2px 12px;box-shadow:2px 4px 0 rgba(0,0,0,.3)}
+.hcard.upfx>img{animation:upPop .6s ease-out}.hcard.upfx{animation:upGlow .9s ease-out}.hcard.upfx .stars,.hcard.upfx>span{animation:bump .5s ease-out .15s}
+.hcard.upbig>img{animation:upPopBig .9s ease-out}
+@keyframes upPop{0%{transform:scale(1)}30%{transform:scale(1.25) translateY(-8px);filter:brightness(1.5)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+@keyframes upPopBig{0%{transform:scale(1)}25%{transform:scale(1.5) translateY(-14px) rotate(-6deg);filter:brightness(1.9)}50%{transform:scale(1.2) rotate(5deg);filter:brightness(1.3)}75%{transform:scale(.94)}100%{transform:scale(1)}}
+@keyframes upGlow{0%{box-shadow:0 0 0 0 rgba(255,210,63,.95)}100%{box-shadow:0 0 0 26px rgba(255,210,63,0)}}
 .yard{flex:1 1 auto;position:relative;min-height:120px;margin:6px 8px 0}
 .mon{position:absolute;width:20%;max-width:110px;aspect-ratio:1;background:none;border:0;padding:0;cursor:pointer;transition:left 2.4s linear,top 2.4s linear;animation:monHop .7s ease-in-out infinite}
 .mon img{width:100%;height:100%;object-fit:contain;display:block}.mon.flip img{transform:scaleX(-1)}
