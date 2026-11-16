@@ -110,6 +110,7 @@ const ATK={
   claw:{name:'Когти',a:{k:'melee',cd:.45,dmg:15,fx:'claw'}},
   grab:{name:'Захват',a:{k:'melee',cd:2.8,dmg:40,fx:'grab'}},
   slam:{name:'Удар о землю',a:{k:'melee',cd:1.9,dmg:38,fx:'slam',aoe:1.5,push:1.4}},
+  maul:{name:'Молот-половинщик',a:{k:'melee',cd:3.8,dmg:16,fx:'slam',aoe:2,half:.5,n:3,push:1.2}},
   saw:{name:'Пила',a:{k:'saw',cd:.14,dmg:7}},
   burst:{name:'Очередь',a:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09}},
   shell:{name:'Снаряды',a:{k:'shell',range:8.5,cd:2.2,dmg:40,blast:1.6}},
@@ -648,6 +649,11 @@ function melee(u,t,M,foes,reach,prim){
   if(M.fx==='tail')sfx('whoosh');
   at(u,d*(M.fx==='slam'?.62:.5),()=>{
     const dmg=M.dmg*u.dm*u.buff,hit=o=>hurt(o,dmg,u.x,u.y,M.push||.3,false,u);
+    if(M.half){ // молот-половинщик: до трёх ближайших врагов теряют половину оставшегося здоровья
+      const R2=reach+M.aoe*base,near=foes.filter(o=>!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<R2).sort((a,b)=>Math.hypot(a.x-u.x,a.y-u.y)-Math.hypot(b.x-u.x,b.y-u.y)).slice(0,M.n||3);
+      near.forEach(o=>{hurt(o,Math.max(dmg,o.hp*M.half),u.x,u.y,M.push||.3,false,u);fx.push({k:'star',x:o.x,y:o.y-o.h*.6,t:0,life:.35,rot:Math.random()*6})});
+      const gx=u.x+dx/l*u.r*.8,gy=u.y+dy/l*u.r*.3;fx.push({k:'ring',x:gx,y:gy,t:0,life:.45,r:R2});for(let j=0;j<6;j++)smoke(gx+rnd(-1,1)*R2*.4,gy,rnd(-1,1)*base*1.5,-base*rnd(.4,1.4),base*rnd(.3,.7),'rgba(120,120,130,.5)');
+      scraps(gx,gy,8,0);sfx('thud');word(near.length?'ПОПОЛАМ!':'БДЫЩ!',gx,gy-u.h*.5,1.5);return}
     if(M.aoe){foes.forEach(o=>{if(!o.dead&&Math.hypot(o.x-u.x,o.y-u.y)<reach+M.aoe*base)hit(o)});if(M.fx==='slam'){ // кулаком о землю: волна по листу, пыль и клочки
         const gx=u.x+dx/l*u.r*.8,gy=u.y+dy/l*u.r*.3,R=reach+M.aoe*base;
         fx.push({k:'ring',x:gx,y:gy,t:0,life:.45,r:R});fx.push({k:'star',x:gx,y:gy-base*.3,t:0,life:.3,rot:Math.random()*6});
