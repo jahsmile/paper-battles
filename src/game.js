@@ -45,6 +45,8 @@ const CH={
     atk:{k:'shell',range:7.5,cd:2.4,dmg:26,blast:1.4,ammo:['fire','ice','poison','nuke'],mi:0},far:{k:'burst',range:6.5,cd:1.5,dmg:8,n:4,gap:.09,mi:1},muz:[[.88,.21],[.985,.555]],lines:L(['Сейчас как бахну!'],['Готов!'],['Эй, полегче!'],['Обе пушки молодцы.'])},
   tking:{name:'Король танков',tag:'царь всех танков',desc:'Из большой пушки швыряет огромный динамит, а мелкие пушки строчат пулями. Рядом с ним свои дерутся сильнее.',H:4.3,hp:760,speed:.7,pw:44,veh:1,heavy:1,idle:'rumble',aura:3.5,
     atk:{k:'shell',range:8.5,cd:3.2,dmg:30,blast:1.5,ammo:['dyn'],mi:0},far:{k:'burst',range:6.5,cd:1.7,dmg:7,n:5,gap:.08,mi:1},muz:[[.985,.23],[.93,.6]],lines:L(['Я король танков!'],['Склонитесь!'],['Корону не трогать!'],['Динамит решает.'])},
+  ghoul:{name:'Жуть',tag:'жуткий крикун',desc:'Летающая зубастая голова. Подкрадывается к самым слабым, кусает огромной пастью и визжит так, что враги разбегаются.',H:2.5,hp:250,speed:2.5,pw:25,idle:'sway',pick:'weak',creep:1,
+    atk:{k:'melee',cd:.6,dmg:19,fx:'claw',parts:['jaw']},scream:{cd:6,r:3.8,fear:1.6,dmg:10},lines:L(['Бу-у-у!'],['Ам!'],['Не смешно!'],['Хе-хе-хе…'])},
   // слуги Ластика: канцелярские злодеи
   blot:{name:'Клякса',tag:'слуга Ластика',desc:'Слуга Ластика.',H:2.3,hp:150,speed:2.4,pw:13,idle:'wobble',atk:{k:'melee',cd:.7,dmg:16,fx:'punch'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
   pin:{name:'Кнопка',tag:'слуга Ластика',desc:'Слуга Ластика.',H:1.7,hp:90,speed:3.2,pw:10,idle:'hop',atk:{k:'melee',cd:.5,dmg:12,fx:'claw'},lines:L(['Гр-р!'],['Ха!'],['Ой!'],['Хе-хе!'])},
@@ -76,6 +78,7 @@ const RIGS={
   fort:[RG('crown','hop','front',[.27,.25],[[.135,.06],[.215,0],[.33,0],[.33,.25],[.215,.25],[.215,.15],[.135,.15]]),RG('gun','recoil','back',[.67,.23],[[.66,.17],[.845,.15],[.845,.29],[.66,.28]])],
   tking:[RG('crown','hop','front',[.53,.16],[[.41,0],[.65,0],[.65,.165],[.41,.165]]),RG('gun','recoil','back',[.64,.24],[[.64,.15],[1,.15],[1,.32],[.64,.32]]),
     RG('guns','recoil','back',[.8,.55],[[.7,.4],[.8,.36],[.96,.55],[.95,.72],[.86,.76]])],
+  ghoul:[RG('jaw','jaw','front',[.5,.6],[[0,.5],[.05,.47],[.2,.58],[.5,.64],[.78,.58],[.9,.44],[1,.5],[1,1],[0,1]])],
   duo:[RG('top','hop','front',[.15,.38],[[.07,.02],[.7,.02],[.78,0],[.9,.1],[.9,.32],[.8,.39],[.74,.38],[.74,.49],[.22,.49],[.2,.38],[.14,.38]]),RG('gun','recoil','front',[.72,.55],[[.72,.49],[1,.5],[1,.61],[.72,.6]]),
     RG('clawL','swing','back',[.13,.6],[[0,.56],[.13,.56],[.15,.66],[.1,.96],[.02,.96]],-25,25),RG('clawR','swing','front',[.84,.68],[[.83,.63],[1,.66],[1,1],[.9,1],[.8,.73]],-25,25)],
   dino:[RG('tail','wag','back',[.37,.52],[[0,0],[.12,0],[.4,.42],[.39,.62],[.3,.6],[0,.2]],-86,86),RG('turret','recoil','front',[.55,.25],[[.4,0],[.84,0],[.84,.22],[.68,.275],[.4,.275]])],
@@ -88,7 +91,7 @@ const RIGS={
   king:[RG('barrel','recoil','back',[.7,.33],[[.7,.23],[.89,.23],[.89,.43],[.7,.43]]),RG('crown','hop','front',[.585,.17],[[.455,0],[.715,0],[.715,.175],[.455,.175]])]
 };
 Object.keys(RIGS).forEach(k=>{CH[k].rig=RIGS[k]});
-const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','blot','pin','clip','sharp','scis','glue','eraser'];
+const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','ghoul','blot','pin','clip','sharp','scis','glue','eraser'];
 // роли для своих рисунков
 const ARCH={
   fighter:{name:'Боец',desc:'дерётся вблизи',hp:130,speed:2.3,pw:12,idle:'breathe',atk:{k:'melee',cd:.8,dmg:18,fx:'punch'}},
@@ -180,7 +183,7 @@ function rigBuild(it,D){
     const w=B.w,h=B.h,body=mk(w,h),g=body.getContext('2d'),parts=B.parts.slice(),rd=it.custom&&it.face===-1?-1:1;g.drawImage(B.img,0,0,w,h);
     list.forEach((p,i)=>{
       const pc=mk(w,h),pg=pc.getContext('2d');polyPath(pg,p.poly,w,h);pg.clip();pg.drawImage(B.img,0,0,w,h);
-      g.save();g.globalCompositeOperation='destination-out';polyPath(g,p.poly,w,h);g.fill();g.restore();
+      g.save();g.globalCompositeOperation=p.anim==='jaw'?'source-atop':'destination-out';g.fillStyle='#240a10';polyPath(g,p.poly,w,h);g.fill();g.restore(); // под пастью остаётся тёмная глотка
       parts.push({id:p.id||'r'+i,j:i,bi:!!p.id,img:pc,x:0,y:0,px:p.pv[0]*w,py:p.pv[1]*h,z:p.z||(p.anim==='recoil'||p.anim==='wag'||p.anim==='flick'?'back':'front'),anim:p.anim,dir:p.dir||(p.pv[0]<.5?1:-1),rd,cus:true,a0:typeof p.a0==='number'?p.a0:-70,a1:typeof p.a1==='number'?p.a1:45,amp:typeof p.amp==='number'?p.amp:1});
     });
     B.rigKey=key;B.rigImg=body;B.rigParts=parts;
@@ -913,6 +916,12 @@ function partAnim(P,u,t){
     case 'wag':
       rot=Math.sin(t*5+ph)*.13;
       if(an&&an.k==='melee'&&an.part===P.id)rot=Math.sin(p*Math.PI)*1.5;
+      break;
+    case 'jaw': // пасть: дышит, клацает при укусе, распахивается при визге
+      dy=(1+Math.sin(t*2.4+ph))*u.D.h*.012;
+      if(an&&an.k==='scream'){dy=u.D.h*.13*Math.sin(p*Math.PI)+(Math.random()-.5)*3;rot=(Math.random()-.5)*.05}
+      else if(an&&an.k==='melee')dy=Math.abs(Math.sin(p*Math.PI*2))*u.D.h*.1;
+      else if(state==='over'&&!u.dead)dy=Math.abs(Math.sin(t*11+ph))*u.D.h*.06;
       break;
     case 'spin':rot=u.spin;break;
     case 'flick':sx=(u.walking?.9:.7)+.22*Math.sin(t*31+ph)+.1*Math.sin(t*17);break;
