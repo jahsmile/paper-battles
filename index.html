@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Бумажные бои</title>
 <link href="https://fonts.googleapis.com/css2?family=Neucha&display=swap" rel="stylesheet">
 <style>
@@ -30,7 +30,8 @@ body{
   -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
 }
 [hidden]{display:none!important}
-button{touch-action:manipulation}
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}*{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button,a,.overlay,.scene,.talk,#coach,#tabbar,.tabbody,.sheet{touch-action:manipulation}.sheet input[type=text],.lines input[type=text],.sheet select{font-size:max(16px,1em)}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px 4px;flex:none}
 h1{font-family:var(--display);font-size:24px;line-height:1;margin:0;font-weight:400;letter-spacing:.5px;white-space:nowrap}
 h1 span{color:var(--marker)}
@@ -311,7 +312,7 @@ body[data-mode="path"] footer .actions{order:1}body[data-mode="path"] footer #li
 .sheet .row.left{justify-content:flex-start}
 .sheet .papers{flex-wrap:wrap}.sheet .papers button{width:38px;height:38px;box-shadow:0 0 0 1px #b9b6ab}
 .sheet .papers button[aria-pressed="true"]{border-color:var(--blue);transform:none;box-shadow:0 0 0 2px var(--blue)}
-.lines{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}.lines label{font-size:13px;color:#55555e}.lines input[type=text]{font-size:15px;padding:5px 7px}
+.lines{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}.lines label{font-size:13px;color:#55555e}.lines input[type=text]{padding:5px 7px}
 .sheet select{font:inherit;font-size:17px;padding:7px 8px;border:2px solid var(--pencil);border-radius:6px;background:#fff;color:var(--pencil);width:100%}
 .actions .btn,.hero .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tipsheet ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:16px;line-height:1.3}
@@ -3642,6 +3643,12 @@ $('mReset').onclick=()=>{
   ims.forEach(im=>{if(im.complete)step();else{im.addEventListener('load',step);im.addEventListener('error',step)}});
   setTimeout(fin,9000);
 })();
+
+// ----- экран нельзя увеличить щипком или двойным тапом: игра рассчитана на масштаб 1
+['gesturestart','gesturechange','gestureend'].forEach(k=>document.addEventListener(k,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
 
 setPaper(paper);
 renderLib();loadCustom();

@@ -1246,3 +1246,9 @@ $('mReset').onclick=()=>{
   ims.forEach(im=>{if(im.complete)step();else{im.addEventListener('load',step);im.addEventListener('error',step)}});
   setTimeout(fin,9000);
 })();
+
+// ----- экран нельзя увеличить щипком или двойным тапом: игра рассчитана на масштаб 1
+['gesturestart','gesturechange','gestureend'].forEach(k=>document.addEventListener(k,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
