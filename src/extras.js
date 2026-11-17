@@ -614,7 +614,7 @@ $('pubOk').onclick=async()=>{
 /* ---------- стихии, первичный осмотр рисунка на устройстве, паспорт героя ---------- */
 const EL={fire:{name:'Огонь',ico:'🔥'},ice:{name:'Лёд',ico:'❄️'},steel:{name:'Сталь',ico:'🛡️'}};
 const BEATS={fire:'ice',ice:'steel',steel:'fire'};
-const EL0={blot:'ice',pin:'fire',clip:'steel',sharp:'steel',scis:'fire',glue:'ice',eraser:'steel',duo:'steel',tking:'fire',ghoul:'fire',king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
+const EL0={hking:'steel',blot:'ice',pin:'fire',clip:'steel',sharp:'steel',scis:'fire',glue:'ice',eraser:'steel',duo:'steel',tking:'fire',ghoul:'fire',king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
 function elOf(it){const o=it.ov;if(o&&EL[o.el])return o.el;const b=it.pit||it;return EL0[String(b.id).slice(2)]||b._el||(b._el=b.D&&b.D.img?scanImg(b.D.img).el:'steel')}
 // первичный осмотр: стихия по цвету, «крутость» по числу деталей и красок
 function scanImg(img){
@@ -710,12 +710,13 @@ const SCENES={
 let NODES=NODES0;NODES0.forEach(n=>{n.key=n.id});
 // страницы альбома: первая нарисована вручную, остальные собираются по тому же плану, но враги сильнее
 const THEMES=[{n:'Мелковое море',map:2,bg:'sea',boss:'blot',talk:'Ластик удрал за море. Плывём за ним!'},{n:'Песочница',map:3,bg:'sand',boss:'sharp',talk:'Сколько песка… Ластик прячется в пирамиде!'},{n:'Космос',map:4,bg:'space',boss:'scis',talk:'Он улетел в космос! Заводи ракету.'},
-  {n:'Кубиковый город',map:5,bg:'blocks',boss:'glue',talk:'Город из кубиков совсем серый. Раскрасим!'},{n:'Замок Ластика',map:6,bg:'lava',boss:'eraser',talk:'Вот он, замок Ластика. Вперёд!'}],ROMAN=['','II','III','IV'];
+  {n:'Кубиковый город',map:5,bg:'blocks',boss:'hking',talk:'Город из кубиков совсем серый. Раскрасим!'},{n:'Замок Ластика',map:6,bg:'lava',boss:'eraser',talk:'Вот он, замок Ластика. Вперёд!'}],ROMAN=['','II','III','IV'];
 const PAGES=[{n:'Опушка',map:1}];
 for(let r=0;r<4;r++)THEMES.forEach(t=>PAGES.push(Object.assign({},t,{n:t.n+(r?' '+ROMAN[r]:''),r})));
 PAGES.forEach((P,k)=>{if(!k)return;const last=k===PAGES.length-1;
   SCENES['pg'+k]=[['me',last?'Последняя страница альбома. Ластик ждёт нас там.':P.r?'Ластик вернулся и стёр страницу заново. Раскрасим её ещё ярче!':P.talk]];
   SCENES['bs'+k]=[[P.boss,'Эта страница теперь моя. Серая и тихая!'],['me','Ненадолго. Мы вернём ей цвет!']]});
+PAGES.forEach((P,k)=>{if(P.boss==='hking')SCENES['bs'+k]=[['hking','Я Король молотов! Этот город теперь мой. Четыре руки — и все для вас!'],['me','Четыре руки нас не испугают. Вперёд!']]});
 SCENES.fin=[['eraser','Всё, всё, сдаюсь! Рисуйте свой альбом…'],['me','Альбом спасён! А рисовать мы не перестанем.']];
 const HEROES=['king','dino','golem','teeth','black','duo','blade','rider','saw','fort','purple','witch','tking','ghoul'],RAR={tking:2,ghoul:1,king:0,dino:0,golem:0,teeth:0,black:0,duo:1,blade:1,rider:1,saw:1,fort:2,purple:2,witch:2};
 const FOEK=['blot','pin','clip','sharp','scis','glue'],PHERO={1:['d-teeth','d-rider'],2:['d-black','d-saw'],3:['d-purple','d-witch'],4:['d-tking','d-ghoul']},BIDS=[0,2,4,6,8,10,12];
@@ -732,12 +733,12 @@ function pageNodes(k){
     if(o.t==='b'){const cnt=Math.min(3+(i>1?1:0)+(i>3&&k>1?1:0),5),fs=[];
       for(let j=0;j<cnt;j++)fs.push(j===0&&i>2?['x-'+HEROES[(k*5+i)%HEROES.length],lv,1.1]:[FOEK[(k*7+i*3+j*5)%6],lv,j?.9:1.05]);
       n.foes=fs;n.name=P.n;n.num=i+1;n.paint=30+4*k+3*i}
-    else if(o.t==='boss'){n.foes=[[P.boss,lv,1.1,1.6],['x-'+HEROES[(k*3+1)%HEROES.length],lv,1],[FOEK[(k+2)%6],lv,.9],[FOEK[(k+4)%6],lv,.9]];if(k>5)n.foes.push([FOEK[(k+1)%6],lv,.9]);
+    else if(o.t==='boss'){const hk=P.boss==='hking';n.foes=[[P.boss,lv,hk?2.2:1.1,hk?1.9:1.6],['x-'+HEROES[(k*3+1)%HEROES.length],lv,1],[FOEK[(k+2)%6],lv,.9],[FOEK[(k+4)%6],lv,.9]];if(k>5)n.foes.push([FOEK[(k+1)%6],lv,.9]);
       n.name=P.n;n.boss=1;n.paint=120+15*k;n.pre='bs'+k;if(k===PAGES.length-1)n.post='fin'}
     else if(o.t==='h'){const h=her[o.id===3?0:1];if(h)n.hero=h;else{n.t='c';n.chest='s'}}
     else if(o.t==='n'){n.t='c';n.chest=k%3?'s':'g'}
     else n.paint=40+10*k+o.id*3;
-    if(n.foes)n.pw=epw((k-1)*7+i);
+    if(n.foes)n.pw=Math.round(epw((k-1)*7+i)*(n.boss&&P.boss==='hking'?1.15:1));
     return n});
 }
 const nodeName=n=>n.num?n.name+' · '+n.num:n.boss?n.name+' · '+'босс':n.name||'';
