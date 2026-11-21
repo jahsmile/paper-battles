@@ -43,6 +43,12 @@ const CH={
     atk:{k:'burst',range:6.5,cd:1.5,dmg:9,n:4,gap:.09},melee:{cd:2.4,dmg:20,fx:'tail',part:'tail',aoe:1.4,push:1.6},muz:[[.82,.11]],lines:L(['Тра-та-та!'],['Ура!'],['Ой-ой!'],['Я самый быстрый!'])},
   duo:{name:'Двупушка',tag:'ворчун с двумя пушками',desc:'Верхняя пушка по очереди бьёт огнём, льдом, ядом и ядерным зарядом. Нижняя строчит пулями.',H:3.1,hp:300,speed:1.2,pw:30,veh:1,idle:'rumble',
     atk:{k:'shell',range:7.5,cd:2.4,dmg:26,blast:1.4,ammo:['fire','ice','poison','nuke'],mi:0},far:{k:'burst',range:6.5,cd:1.5,dmg:8,n:4,gap:.09,mi:1},muz:[[.88,.21],[.985,.555]],lines:L(['Сейчас как бахну!'],['Готов!'],['Эй, полегче!'],['Обе пушки молодцы.'])},
+  stump:{name:'Пенёк',tag:'дубовый танк',desc:'Танк-пенёк на колёсах-жёлудях. Из пушки-ветки бьёт тяжёлыми чугунными ядрами: ядро сшибает с ног и отскакивает дальше, задевая ещё кого-нибудь.',H:3,hp:480,speed:.8,pw:33,veh:1,heavy:1,idle:'rumble',
+    atk:{k:'shell',range:8.5,cd:2.3,dmg:30,blast:1.1,ammo:['ball'],mi:0},muz:[[.96,.18]],lines:L(['Заряжай ядра!'],['Бах — и нету!'],['Я крепкий, я дубовый!'],['Корни держат!'])},
+  sking:{name:'Пень-король',tag:'король всех пеньков',desc:'Огромный тёмный пень в золотой короне. Бьёт из пушки двумя исполинскими ядрами подряд: каждое скачет дважды и раскидывает врагов. Толстая кора гасит часть урона, а рядом с ним свои дерутся сильнее.',H:4.2,hp:820,speed:.7,pw:46,veh:1,heavy:1,idle:'rumble',aura:3.5,armor:.85,
+    atk:{k:'shell',range:9,cd:2.8,dmg:34,blast:1.3,n:2,gap:.35,ammo:['bigball'],mi:0},muz:[[.81,.32]],lines:L(['На колени, щепки!'],['Ядро за ядром!'],['Кора у короля крепкая!'],['Да здравствует Пень-король!'])},
+  pking:{name:'Огнепень',tag:'огнедышащий пень в короне',desc:'Ходит на зелёных когтях. Длинными руками хватает врага, поднимает и швыряет об лист, а из зубастой пасти дышит огнём.',H:4,hp:620,speed:1.3,pw:40,idle:'breathe',
+    atk:{k:'flame',range:4,cd:.14,dmg:6,mi:0},melee:{cd:2.6,dmg:42,fx:'grab',parts:['arms']},muz:[[.63,.34]],lines:L(['Сейчас схвачу и поджарю!'],['Хвать — и в огонь!'],['Мои корни горят!'],['Я самый жаркий пень!'])},
   comet:{name:'Кометчик',tag:'звёздный танк',desc:'Танк в шлеме. Из большой пушки запускает кометы с огненным хвостом: они взрываются и морозят всех рядом. Задняя пушка строчит пулями.',H:3.3,hp:520,speed:.9,pw:36,veh:1,heavy:1,idle:'rumble',
     atk:{k:'shell',range:9,cd:2.6,dmg:26,blast:1.5,ammo:['comet'],mi:0},far:{k:'burst',range:6,cd:1.9,dmg:6,n:4,gap:.09,mi:1},muz:[[.87,.38],[.02,.33]],lines:L(['Кометы к бою!'],['Прямо в цель!'],['Шлем выдержит!'],['Звёзды за нас.'])},
   tking:{name:'Король танков',tag:'царь всех танков',desc:'Из большой пушки швыряет огромный динамит, а мелкие пушки строчат пулями. Рядом с ним свои дерутся сильнее.',H:4.3,hp:760,speed:.7,pw:44,veh:1,heavy:1,idle:'rumble',aura:3.5,
@@ -80,6 +86,9 @@ const RIGS={
   blade:[RG('barrel','recoil','back',[.66,.33],[[.66,.2],[1,.16],[1,.5],[.66,.45]])],
   witch:[RG('armL','swing','front',[.2,.34],[[.08,.3],[.25,.3],[.235,.5],[.21,.98],[0,.98],[0,.45]]),RG('armR','swing','front',[.63,.31],[[.58,.26],[.76,.3],[.96,.7],[1,.76],[1,.9],[.75,.9],[.73,.6],[.67,.42]])],
   fort:[RG('crown','hop','front',[.27,.25],[[.135,.06],[.215,0],[.33,0],[.33,.25],[.215,.25],[.215,.15],[.135,.15]]),RG('gun','recoil','back',[.67,.23],[[.66,.17],[.845,.15],[.845,.29],[.66,.28]])],
+  stump:[RG('gun','recoil','front',[.64,.2],[[.63,.11],[.99,.09],[.99,.3],[.63,.29]])],
+  sking:[RG('gun','recoil','front',[.58,.32],[[.57,.25],[.82,.24],[.82,.4],[.57,.4]])],
+  pking:[RG('arms','swing','front',[.52,.62],[[.5,.6],[.64,.47],[.78,.33],[.86,.29],[1,.3],[1,.48],[.88,.47],[.72,.55],[.62,.65],[.5,.66]],-25,25)],
   comet:[RG('gun','recoil','front',[.62,.37],[[.62,.28],[.9,.28],[.9,.47],[.62,.47]]),RG('gun2','recoil','back',[.28,.45],[[0,.27],[.22,.27],[.3,.4],[.3,.5],[.18,.52],[0,.4]])],
   tking:[RG('crown','hop','front',[.53,.16],[[.41,0],[.65,0],[.65,.165],[.41,.165]]),RG('gun','recoil','back',[.64,.24],[[.64,.15],[1,.15],[1,.32],[.64,.32]]),
     RG('guns','recoil','back',[.8,.55],[[.7,.4],[.8,.36],[.96,.55],[.95,.72],[.86,.76]])],
@@ -98,7 +107,7 @@ const RIGS={
   king:[RG('barrel','recoil','back',[.7,.33],[[.7,.23],[.89,.23],[.89,.43],[.7,.43]]),RG('crown','hop','front',[.585,.17],[[.455,0],[.715,0],[.715,.175],[.455,.175]])]
 };
 Object.keys(RIGS).forEach(k=>{CH[k].rig=RIGS[k]});
-const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','ghoul','comet','blot','pin','clip','sharp','scis','glue','eraser','hking'];
+const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','ghoul','comet','stump','sking','pking','blot','pin','clip','sharp','scis','glue','eraser','hking'];
 // роли для своих рисунков
 const ARCH={
   fighter:{name:'Боец',desc:'дерётся вблизи',hp:130,speed:2.3,pw:12,idle:'breathe',atk:{k:'melee',cd:.8,dmg:18,fx:'punch'}},
@@ -600,11 +609,12 @@ function fireSuper(u){
   }
   return true;
 }
-const AMMO={fire:{burn:3,col:'#ff5a1f'},ice:{freeze:3,col:'#8fd3ff'},poison:{poison:5,col:'#4caf2a',dk:.7},nuke:{nuke:1,col:'#ffe24a',dk:1.7,bk:2.1},dyn:{dyn:1,col:'#d8262b',dk:1.8,bk:1.9},comet:{comet:1,freeze:1.2,col:'#59b7ff',dk:1.4,bk:1.4}};
+const AMMO={fire:{burn:3,col:'#ff5a1f'},ice:{freeze:3,col:'#8fd3ff'},poison:{poison:5,col:'#4caf2a',dk:.7},nuke:{nuke:1,col:'#ffe24a',dk:1.7,bk:2.1},dyn:{dyn:1,col:'#d8262b',dk:1.8,bk:1.9},comet:{comet:1,freeze:1.2,col:'#59b7ff',dk:1.4,bk:1.4},ball:{ball:1,col:'#2b2b33',dk:1.25},bigball:{ball:2,col:'#17171c',dk:1.35,bk:1.25}};
 function explode(x,y,rad,dmg,team,o={}){
-  units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze;if(o.poison&&!q.dead){q.poisT=o.poison;q.poisD=dmg*.22;q.poisBy=o.by}}});
+  units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:o.ball?1.7:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze;if(o.poison&&!q.dead){q.poisT=o.poison;q.poisD=dmg*.22;q.poisBy=o.by}}});
   fx.push({k:'boom',x,y,t:0,life:o.nuke?.6:o.dyn?.5:.35,r:rad,col:o.freeze?'#8fd3ff':o.plasma?'#b63ad6':o.poison?'#6bd13a':o.nuke?'#ffe24a':'#ff8a1f',col2:o.freeze?'#ffffff':o.plasma?'#f0b8ff':o.poison?'#d8ffb0':o.nuke?'#ffffff':MARKER});
   if(o.dyn)word('БА-БАХ!',x,y-base,1.5);
+  if(o.ball){word(o.hop?'БАЦ!':'БУМ!',x,y-base,o.hop?1:1.25);shake=Math.max(shake,o.hop?3:6)}
   if(o.comet){word('БУМ!',x,y-base,1.3);for(let j=0;j<8;j++){const an=j*.785+Math.random()*.4;fx.push({k:'star',x:x+Math.cos(an)*rad*.6,y:y+Math.sin(an)*rad*.6,t:0,life:.3+Math.random()*.2,rot:Math.random()*6})}}
   if(o.nuke){ // гриб: столб дыма вверх и шапка
     shake=Math.max(shake,12);sfx('boom');word('БА-БАХ!',x,y-rad,1.6);fx.push({k:'ring',x,y:y+base*.3,t:0,life:.6,r:rad*1.6});
@@ -707,7 +717,7 @@ function fire(u,t,A,foes,key){
     if(A.k==='shell'){
       // пушка с разными зарядами: огонь, лёд, яд, ядерный — по очереди
       const am=A.ammo?AMMO[A.ammo[u.ammoI=((u.ammoI==null?-1:u.ammoI)+1)%A.ammo.length]]:A,col=am.col||A.col;
-      shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg()*(am.dk||1),blast:A.blast*base*u.bl*(am.bk||1),team:u.team,freeze:am.freeze,burn:am.burn,poison:am.poison,nuke:am.nuke,dyn:am.dyn,comet:am.comet,col,by:u,sm:0,sz:u.bl*(am.nuke?1.5:am.dyn?2.6:am.comet?2:1)});
+      shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg()*(am.dk||1),blast:A.blast*base*u.bl*(am.bk||1),team:u.team,freeze:am.freeze,burn:am.burn,poison:am.poison,nuke:am.nuke,dyn:am.dyn,comet:am.comet,ball:am.ball,col,by:u,sm:0,sz:u.bl*(am.nuke?1.5:am.dyn?2.6:am.comet?2:am.ball?1.3+(am.ball-1)*.5:1)});
       fx.push({k:'flash',x:m.x,y:m.y,t:0,life:.14,rot:a,s:u.bl,col});
       for(let j=0;j<4;j++)smoke(m.x,m.y,Math.cos(a)*base*rnd(1,3.5),Math.sin(a)*base*2-base*rnd(.4,1.4),base*rnd(.25,.5)*u.bl);
       sfx('cannon',.04);shake=Math.max(shake,2+u.s);
@@ -852,7 +862,12 @@ function update(dt){
     if(s.k==='shell'){
       const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy)||1,st=base*12*dt;
       s.sm-=dt;if(s.sm<=0){s.sm=.04;smoke(s.x,s.y,0,-base*.5,base*.16)}
-      if(d<=st){explode(s.tx,s.ty,s.blast,s.dmg,s.team,s);s.done=true}else{s.x+=dx/d*st;s.y+=dy/d*st}
+      if(d<=st){explode(s.tx,s.ty,s.blast,s.dmg,s.team,s);
+        if(s.ball&&(s.hop||0)<s.ball){ // ядро отскакивает дальше по ходу полёта
+          const c=Math.cos(s.a),n=Math.sin(s.a),L=base*3.2;s.hop=(s.hop||0)+1;s.x=s.tx;s.y=s.ty;s.hx=s.x;s.hy=s.y;s.hd=L;
+          s.tx=Math.max(base,Math.min(W-base,s.x+c*L));s.ty=Math.max(base,Math.min(H-base,s.y+n*L*.6));s.dmg*=.55;s.blast*=.8;
+        }else s.done=true}
+      else{s.x+=dx/d*st;s.y+=dy/d*st}
     }else if(s.k==='rocket'){
       s.life-=dt;const tg=s.t&&!s.t.dead?s.t:null;if(tg){s.tx=tg.x;s.ty=tg.y-tg.h*.4}
       const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy)||1,sp=base*11,k=Math.min(1,dt*3.5);
@@ -1187,6 +1202,10 @@ function drawShot(s){
     [['#ff8a1f',1.9,.34],['#ffd23f',1.45,.24],['#bfe6ff',1,.15]].forEach(([c,L,wd],j)=>{ctx.fillStyle=c;ctx.globalAlpha=.85;ctx.beginPath();ctx.moveTo(z*.1,-z*wd);ctx.quadraticCurveTo(-z*L*.5,-z*wd*(1.1+.25*Math.sin(T+j)),-z*L*(1+.08*Math.sin(T*1.7+j)),z*.06*Math.sin(T+j*2));ctx.quadraticCurveTo(-z*L*.5,z*wd*(1.1+.25*Math.cos(T+j)),z*.1,z*wd);ctx.fill()});
     ctx.globalAlpha=1;ctx.lineWidth=2;ctx.fillStyle='#59b7ff';ctx.beginPath();ctx.arc(z*.12,0,z*.26,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(z*.2,-z*.08,z*.09,0,7);ctx.fill();
     ctx.fillStyle='#ffe24a';for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(-z*(.7+j*.45)+Math.sin(T*2+j)*z*.1,Math.cos(T*3+j*2)*z*.22,z*.05,0,7);ctx.fill()}
+  }else if(s.ball){ // чугунное ядро; при отскоке летит дугой
+    if(s.hop){const p=Math.min(1,Math.hypot(s.x-s.hx,s.y-s.hy)/(s.hd||1));ctx.rotate(-s.a);ctx.translate(0,-Math.sin(p*Math.PI)*base*1.3)}
+    ctx.lineWidth=2;ctx.fillStyle=s.col;ctx.beginPath();ctx.arc(0,0,z*.3,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.beginPath();ctx.arc(-z*.09,-z*.1,z*.08,0,7);ctx.fill();
   }else if(s.dyn){ // огромная динамитная шашка с горящим фитилём
     ctx.rotate(Math.sin(s.x*.05)*.5);ctx.lineWidth=2;ctx.fillStyle='#d8262b';ctx.beginPath();ctx.rect(-z*.42,-z*.16,z*.84,z*.32);ctx.fill();ctx.stroke();
     ctx.fillStyle='#ffd23f';ctx.fillRect(-z*.2,-z*.16,z*.09,z*.32);ctx.fillRect(z*.11,-z*.16,z*.09,z*.32);
