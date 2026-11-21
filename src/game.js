@@ -47,6 +47,10 @@ const CH={
     atk:{k:'shell',range:8.5,cd:2.3,dmg:30,blast:1.1,ammo:['ball'],mi:0},muz:[[.96,.18]],lines:L(['Заряжай ядра!'],['Бах — и нету!'],['Я крепкий, я дубовый!'],['Корни держат!'])},
   sking:{name:'Пень-король',tag:'король всех пеньков',desc:'Огромный тёмный пень в золотой короне. Бьёт из пушки двумя исполинскими ядрами подряд: каждое скачет дважды и раскидывает врагов. Толстая кора гасит часть урона, а рядом с ним свои дерутся сильнее.',H:4.2,hp:820,speed:.7,pw:46,veh:1,heavy:1,idle:'rumble',aura:3.5,armor:.85,
     atk:{k:'shell',range:9,cd:2.8,dmg:34,blast:1.3,n:2,gap:.35,ammo:['bigball'],mi:0},muz:[[.81,.32]],lines:L(['На колени, щепки!'],['Ядро за ядром!'],['Кора у короля крепкая!'],['Да здравствует Пень-король!'])},
+  vbot:{name:'Вертобот',tag:'летающий робот-хватала',desc:'Летает на пропеллере и всё время машет руками-клешнями. Синий глаз жжёт лазером, а вблизи клешни щиплют сразу всех вокруг. Когда ранен, крутится быстрее и становится злее.',H:3.4,hp:260,speed:2.2,pw:28,idle:'float',enrage:1,
+    atk:{k:'laser',range:6,cd:.1,dmg:3,col:'#3aa0e8'},melee:{cd:1.6,dmg:18,fx:'claw',aoe:1.1},muz:[[.28,.5]],lines:L(['Бип-бип, взлетаю!'],['Цап-цап!'],['Пропеллер погнулся!'],['Бип! Победа!'])},
+  bomber:{name:'Бомбарь',tag:'великан с бомбомётом',desc:'Длинный серый великан, к голове приделан хитрый механизм с красными шарами. Он швыряет бомбу дугой куда-то рядом с врагом: может и промазать, но если попадёт — очень больно. Вблизи бьёт длинными ручищами о лист.',H:5.2,hp:560,speed:.9,pw:42,idle:'sway',
+    atk:{k:'mortar',range:11,cd:3.3,dmg:120,blast:1,spread:1.8},melee:{cd:2.4,dmg:26,fx:'slam',aoe:1.1,push:1.4},muz:[[.7,.06]],lines:L(['Механизм заряжен!'],['Прямое попадание!'],['Шестерёнки скрипят!'],['Бомбы не врут.'])},
   pking:{name:'Огнепень',tag:'огнедышащий пень в короне',desc:'Ходит на зелёных когтях. Длинными руками хватает врага, поднимает и швыряет об лист, а из зубастой пасти дышит огнём.',H:4,hp:620,speed:1.3,pw:40,idle:'breathe',
     atk:{k:'flame',range:4,cd:.14,dmg:6,mi:0},melee:{cd:2.6,dmg:42,fx:'grab',parts:['arms']},muz:[[.63,.34]],lines:L(['Сейчас схвачу и поджарю!'],['Хвать — и в огонь!'],['Мои корни горят!'],['Я самый жаркий пень!'])},
   comet:{name:'Кометчик',tag:'звёздный танк',desc:'Танк в шлеме. Из большой пушки запускает кометы с огненным хвостом: они взрываются и морозят всех рядом. Задняя пушка строчит пулями.',H:3.3,hp:520,speed:.9,pw:36,veh:1,heavy:1,idle:'rumble',
@@ -88,6 +92,10 @@ const RIGS={
   fort:[RG('crown','hop','front',[.27,.25],[[.135,.06],[.215,0],[.33,0],[.33,.25],[.215,.25],[.215,.15],[.135,.15]]),RG('gun','recoil','back',[.67,.23],[[.66,.17],[.845,.15],[.845,.29],[.66,.28]])],
   stump:[RG('gun','recoil','front',[.64,.2],[[.63,.11],[.99,.09],[.99,.3],[.63,.29]])],
   sking:[RG('gun','recoil','front',[.58,.32],[[.57,.25],[.82,.24],[.82,.4],[.57,.4]])],
+  vbot:[Object.assign(RG('armU','swing','front',[.52,.47],[[.38,.06],[1,.06],[1,.28],[.6,.28],[.58,.5],[.44,.5],[.44,.26],[.38,.26]],-40,40),{wave:1}),
+    Object.assign(RG('armD','swing','front',[.08,.48],[[0,.47],[.13,.47],[.13,.82],[.42,.83],[.42,1],[0,1]],-40,40),{wave:1}),
+    RG('prop','spin','back',[.27,.17],[[.08,0],[.38,0],[.38,.3],[.08,.3]])],
+  bomber:[RG('mech','recoil','front',[.75,.3],[[.47,.02],[1,0],[1,.42],[.47,.42]])],
   pking:[RG('arms','swing','front',[.52,.62],[[.5,.6],[.64,.47],[.78,.33],[.86,.29],[1,.3],[1,.48],[.88,.47],[.72,.55],[.62,.65],[.5,.66]],-25,25)],
   comet:[RG('gun','recoil','front',[.62,.37],[[.62,.28],[.9,.28],[.9,.47],[.62,.47]]),RG('gun2','recoil','back',[.28,.45],[[0,.27],[.22,.27],[.3,.4],[.3,.5],[.18,.52],[0,.4]])],
   tking:[RG('crown','hop','front',[.53,.16],[[.41,0],[.65,0],[.65,.165],[.41,.165]]),RG('gun','recoil','back',[.64,.24],[[.64,.15],[1,.15],[1,.32],[.64,.32]]),
@@ -107,7 +115,7 @@ const RIGS={
   king:[RG('barrel','recoil','back',[.7,.33],[[.7,.23],[.89,.23],[.89,.43],[.7,.43]]),RG('crown','hop','front',[.585,.17],[[.455,0],[.715,0],[.715,.175],[.455,.175]])]
 };
 Object.keys(RIGS).forEach(k=>{CH[k].rig=RIGS[k]});
-const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','ghoul','comet','stump','sking','pking','blot','pin','clip','sharp','scis','glue','eraser','hking'];
+const ORDER=['king','fort','blade','black','teeth','dino','rider','golem','saw','purple','witch','duo','tking','ghoul','comet','stump','sking','pking','bomber','vbot','blot','pin','clip','sharp','scis','glue','eraser','hking'];
 // роли для своих рисунков
 const ARCH={
   fighter:{name:'Боец',desc:'дерётся вблизи',hp:130,speed:2.3,pw:12,idle:'breathe',atk:{k:'melee',cd:.8,dmg:18,fx:'punch'}},
@@ -201,7 +209,7 @@ function rigBuild(it,D){
     list.forEach((p,i)=>{
       const pc=mk(w,h),pg=pc.getContext('2d');polyPath(pg,p.poly,w,h);pg.clip();pg.drawImage(B.img,0,0,w,h);
       g.save();g.globalCompositeOperation=p.anim==='jaw'?'source-atop':'destination-out';g.fillStyle='#240a10';polyPath(g,p.poly,w,h);g.fill();g.restore(); // под пастью остаётся тёмная глотка
-      parts.push({id:p.id||'r'+i,j:i,bi:!!p.id,img:pc,x:0,y:0,px:p.pv[0]*w,py:p.pv[1]*h,z:p.z||(p.anim==='recoil'||p.anim==='wag'||p.anim==='flick'?'back':'front'),anim:p.anim,dir:p.dir||(p.pv[0]<.5?1:-1),rd,cus:true,a0:typeof p.a0==='number'?p.a0:-70,a1:typeof p.a1==='number'?p.a1:45,amp:typeof p.amp==='number'?p.amp:1});
+      parts.push({id:p.id||'r'+i,j:i,bi:!!p.id,img:pc,x:0,y:0,px:p.pv[0]*w,py:p.pv[1]*h,z:p.z||(p.anim==='recoil'||p.anim==='wag'||p.anim==='flick'?'back':'front'),anim:p.anim,dir:p.dir||(p.pv[0]<.5?1:-1),rd,cus:true,a0:typeof p.a0==='number'?p.a0:-70,a1:typeof p.a1==='number'?p.a1:45,amp:typeof p.amp==='number'?p.amp:1,wave:p.wave});
     });
     B.rigKey=key;B.rigImg=body;B.rigParts=parts;
   }
@@ -558,8 +566,8 @@ function hurt(u,d,sx,sy,push=.25,quiet=false,by=null){
   if(u.hp<=0){u.dead=true;u.deadT=u.D.rem==='wreck'?0:.4;u.hp=0;sfx('crumple',.08);scraps(u.x,u.y-u.h*.5,9,0);if(by&&by.team!==u.team)by.kills++;if(by&&!preview&&by.item.id&&by.team!==u.team)stat(by.item.id).k++;if(u.dmgAcc>=1){fx.push({k:'num',text:'−'+Math.round(u.dmgAcc),x:u.x,y:u.y-u.h*.9,vx:0,vy:-base*1.6,t:0,life:.8});u.dmgAcc=0}if(by&&!by.dead&&Math.random()<.4)say(by,'kill')}
 }
 // суперудар: копится в бою, запускается тапом по герою (или сам через несколько секунд)
-const SUPER={melee:'Вихрь ударов',saw:'Бешеная пила',bomb:'Ярость',shell:'Залп',ice:'Ледяная буря',napalm:'Огненный круг',flame:'Огненный круг',rocket:'Ракетный дождь',burst:'Шквал огня',plasma:'Плазменный шторм',laser:'Лазерная развёртка',beam:'Мегалуч',heal:'Большое лечение'};
-function superKind(D){const a=D.atks[0];return a.k==='shell'?(a.freeze?'ice':a.burn?'napalm':'shell'):a.k==='burst'?(a.plasma?'plasma':'burst'):SUPER[a.k]?a.k:'melee'}
+const SUPER={mortar:'Бомбопад',melee:'Вихрь ударов',saw:'Бешеная пила',bomb:'Ярость',shell:'Залп',ice:'Ледяная буря',napalm:'Огненный круг',flame:'Огненный круг',rocket:'Ракетный дождь',burst:'Шквал огня',plasma:'Плазменный шторм',laser:'Лазерная развёртка',beam:'Мегалуч',heal:'Большое лечение'};
+function superKind(D){const a=D.atks[0];return a.k==='mortar'?'mortar':a.k==='shell'?(a.freeze?'ice':a.burn?'napalm':'shell'):a.k==='burst'?(a.plasma?'plasma':'burst'):SUPER[a.k]?a.k:'melee'}
 function fireSuper(u){
   if(u.dead||u.sup<1||u.supT>0)return false;
   const kind=superKind(u.D),A=u.D.atks[0],quick=kind==='melee'||kind==='saw'||kind==='bomb',R=base*3.2*u.rg,dm=u.dm;
@@ -567,6 +575,9 @@ function fireSuper(u){
   fx.push({k:'wave',x:u.x,y:u.y,r:R*1.3,t:0,life:.4});word(SUPER[kind].toUpperCase()+'!',u.x,u.y-u.h*1.15,1.25);sfx('super');shake=Math.max(shake,6);heroSnd(u,true);
   const any=()=>{const l=foesOf(u);return l.length?pick(l):null};
   switch(kind){
+    case 'mortar':
+      for(let i=0;i<5;i++)at(u,i*.22,()=>{const t=any();if(!t)return;mortar(u,t,A.dmg*dm*.6,A,mz(u,0));u.an={k:'shoot',t:.2,d:.2}});
+      break;
     case 'shell':
       for(let i=0;i<6;i++)at(u,i*.13,()=>{const t=any();if(!t)return;const m=mz(u,i),tx=t.x+rnd(-1,1)*base,ty=t.y-t.h*.35,a=Math.atan2(ty-m.y,tx-m.x);
         shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:A.dmg*dm*.8,blast:A.blast*base*u.bl,team:u.team,by:u,sm:0,sz:u.bl});fx.push({k:'flash',x:m.x,y:m.y,t:0,life:.14,rot:a,s:u.bl});u.an={k:'shoot',t:.2,d:.2};sfx('cannon',.04)});
@@ -611,9 +622,10 @@ function fireSuper(u){
 }
 const AMMO={fire:{burn:3,col:'#ff5a1f'},ice:{freeze:3,col:'#8fd3ff'},poison:{poison:5,col:'#4caf2a',dk:.7},nuke:{nuke:1,col:'#ffe24a',dk:1.7,bk:2.1},dyn:{dyn:1,col:'#d8262b',dk:1.8,bk:1.9},comet:{comet:1,freeze:1.2,col:'#59b7ff',dk:1.4,bk:1.4},ball:{ball:1,col:'#2b2b33',dk:1.25},bigball:{ball:2,col:'#17171c',dk:1.35,bk:1.25}};
 function explode(x,y,rad,dmg,team,o={}){
-  units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:o.ball?1.7:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze;if(o.poison&&!q.dead){q.poisT=o.poison;q.poisD=dmg*.22;q.poisBy=o.by}}});
+  units.forEach(q=>{if(!q.dead&&q.team!==team&&Math.hypot(q.x-x,q.y-q.h*.35-y)<rad+q.r*.6){hurt(q,dmg,x,y,o.small?.3:o.ball||o.mortar?1.7:.8,false,o.by);if(o.freeze&&!q.dead)q.slowT=o.freeze;if(o.poison&&!q.dead){q.poisT=o.poison;q.poisD=dmg*.22;q.poisBy=o.by}}});
   fx.push({k:'boom',x,y,t:0,life:o.nuke?.6:o.dyn?.5:.35,r:rad,col:o.freeze?'#8fd3ff':o.plasma?'#b63ad6':o.poison?'#6bd13a':o.nuke?'#ffe24a':'#ff8a1f',col2:o.freeze?'#ffffff':o.plasma?'#f0b8ff':o.poison?'#d8ffb0':o.nuke?'#ffffff':MARKER});
   if(o.dyn)word('БА-БАХ!',x,y-base,1.5);
+  if(o.mortar){word('БА-БАХ!',x,y-base,1.5);shake=Math.max(shake,9);sfx('boom');fx.push({k:'ring',x,y:y+base*.3,t:0,life:.45,r:rad*1.5})}
   if(o.ball){word(o.hop?'БАЦ!':'БУМ!',x,y-base,o.hop?1:1.25);shake=Math.max(shake,o.hop?3:6)}
   if(o.comet){word('БУМ!',x,y-base,1.3);for(let j=0;j<8;j++){const an=j*.785+Math.random()*.4;fx.push({k:'star',x:x+Math.cos(an)*rad*.6,y:y+Math.sin(an)*rad*.6,t:0,life:.3+Math.random()*.2,rot:Math.random()*6})}}
   if(o.nuke){ // гриб: столб дыма вверх и шапка
@@ -714,7 +726,9 @@ function fire(u,t,A,foes,key){
     let tg=list?list[i%list.length]:t;if(tg.dead){tg=foesOf(u)[0];if(!tg)return}
     const m=mz(u,A.mi!=null?A.mi:i),tx=tg.x,ty=tg.y-tg.h*.35,a=Math.atan2(ty-m.y,tx-m.x);
     u.an={k:'shoot',t:.3,d:.3};
-    if(A.k==='shell'){
+    if(A.k==='mortar'){ // бомбомёт: бомба летит дугой в случайную точку рядом с врагом
+      mortar(u,tg,dmg(),A,m);
+    }else if(A.k==='shell'){
       // пушка с разными зарядами: огонь, лёд, яд, ядерный — по очереди
       const am=A.ammo?AMMO[A.ammo[u.ammoI=((u.ammoI==null?-1:u.ammoI)+1)%A.ammo.length]]:A,col=am.col||A.col;
       shots.push({k:'shell',x:m.x,y:m.y,tx,ty,a,dmg:dmg()*(am.dk||1),blast:A.blast*base*u.bl*(am.bk||1),team:u.team,freeze:am.freeze,burn:am.burn,poison:am.poison,nuke:am.nuke,dyn:am.dyn,comet:am.comet,ball:am.ball,col,by:u,sm:0,sz:u.bl*(am.nuke?1.5:am.dyn?2.6:am.comet?2:am.ball?1.3+(am.ball-1)*.5:1)});
@@ -730,6 +744,12 @@ function fire(u,t,A,foes,key){
       if(!A.plasma)fx.push({k:'scrap',x:m.x,y:m.y,vx:-u.face*base*rnd(1,3),vy:-base*rnd(3,6),rot:0,vr:rnd(-12,12),t:0,life:.5,s:base*.14,col:'#e0a800'});
     }
   });
+}
+function mortar(u,tg,dmg,A,m){
+  const an=Math.random()*6.283,rr=Math.sqrt(Math.random())*(A.spread||1.5)*base,tx=tg.x+Math.cos(an)*rr,ty=tg.y-tg.h*.35+Math.sin(an)*rr*.6,d=Math.hypot(tx-m.x,ty-m.y);
+  shots.push({k:'mortar',x:m.x,y:m.y,x2:m.x,y2:m.y,tx,ty,p:0,T:.8+d/(base*14),hh:base*2.5+d*.35,dmg,blast:A.blast*base*u.bl,team:u.team,by:u,sm:0,sz:u.bl});
+  fx.push({k:'flash',x:m.x,y:m.y,t:0,life:.16,rot:-1.57,s:u.bl,col:'#d8262b'});
+  for(let j=0;j<5;j++)smoke(m.x,m.y,rnd(-1,1)*base,-base*rnd(1.5,3),base*rnd(.3,.55)*u.bl);sfx('cannon',.04);
 }
 function healRay(u,t){fx.push({k:'healray',x:u.x,y:u.y-u.h*.6,x2:t.x,y2:t.y-t.h*.5,t:0,life:.3});fx.push({k:'plus',x:t.x,y:t.y-t.h,t:0,life:.7});sfx('heal',.15)}
 function healer(u,foes,dt){
@@ -859,7 +879,11 @@ function update(dt){
   zones=zones.filter(z=>z.t<z.life);
   // снаряды
   for(const s of shots){
-    if(s.k==='shell'){
+    if(s.k==='mortar'){
+      s.p=Math.min(1,s.p+dt/s.T);const p=s.p;s.x=s.x2+(s.tx-s.x2)*p;s.y=s.y2+(s.ty-s.y2)*p-Math.sin(p*Math.PI)*s.hh;
+      s.sm-=dt;if(s.sm<=0){s.sm=.05;smoke(s.x,s.y,0,-base*.3,base*.14)}
+      if(p>=1){explode(s.tx,s.ty,s.blast,s.dmg,s.team,{by:s.by,mortar:1});s.done=true}
+    }else if(s.k==='shell'){
       const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy)||1,st=base*12*dt;
       s.sm-=dt;if(s.sm<=0){s.sm=.04;smoke(s.x,s.y,0,-base*.5,base*.16)}
       if(d<=st){explode(s.tx,s.ty,s.blast,s.dmg,s.team,s);
@@ -965,7 +989,7 @@ function partAnim(P,u,t){
     if(P.anim==='swing'||P.anim==='wag'){
       let n;
       if(P.anim==='swing'){
-        n=Math.sin(t*1.8+ph+P.px)*.042;
+        n=P.wave?Math.sin(t*4+ph+P.px*.05)*.5:Math.sin(t*1.8+ph+P.px)*.042;
         if(u.liftT>0&&!u.liftV)n=P.dir*(1.5*liftUp(u)*(1-liftDown(u))-.4*liftDown(u))+Math.sin(t*16)*.03;else if(u.fearT>0)n=P.dir*1.08+Math.sin(t*30)*.1;else if(an&&an.k==='scream')n=P.dir*1.75*Math.sin(p*Math.PI);else if(melee&&(!an.part||an.part===P.id))n=swing(p)/1.2;else if(state==='over'&&!u.dead)n=P.dir*(1.33+Math.sin(t*9+ph)*.25);
       }else{n=Math.sin(t*5+ph)*.087;if(melee&&(an.part?an.part===P.id:!P.bi))n=Math.sin(p*Math.PI)}
       rot=(n>=0?n*P.a1:-n*P.a0)*Math.PI/180;
@@ -1196,6 +1220,13 @@ function drawFx(f){
   ctx.restore();
 }
 function drawShot(s){
+  if(s.k==='mortar'){ // метка на листе, куда упадёт бомба, и сама бомба с фитилём
+    const T=performance.now()/120,z=base*(s.sz||1);ctx.save();ctx.strokeStyle='#d8262b';ctx.lineWidth=2;ctx.globalAlpha=.45+.35*Math.sin(T);ctx.setLineDash([6,5]);
+    ctx.beginPath();ctx.ellipse(s.tx,s.ty,s.blast,s.blast*.6,0,0,7);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(s.tx-z*.3,s.ty);ctx.lineTo(s.tx+z*.3,s.ty);ctx.moveTo(s.tx,s.ty-z*.2);ctx.lineTo(s.tx,s.ty+z*.2);ctx.stroke();
+    ctx.globalAlpha=1;ctx.translate(s.x,s.y);ctx.rotate(s.p*8);ctx.strokeStyle=PENCIL;ctx.lineWidth=2;ctx.fillStyle='#d8262b';ctx.beginPath();ctx.ellipse(0,0,z*.36,z*.3,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#2b2b33';ctx.fillRect(-z*.36,-z*.06,z*.72,z*.12);ctx.beginPath();ctx.moveTo(0,-z*.3);ctx.quadraticCurveTo(z*.12,-z*.5,z*.05,-z*.6);ctx.stroke();
+    ctx.fillStyle=Math.random()<.5?'#ffe24a':'#ff8a1f';ctx.beginPath();ctx.arc(z*.05,-z*.6,z*(.07+Math.random()*.06),0,7);ctx.fill();ctx.restore();return;
+  }
   ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.a);ctx.strokeStyle=PENCIL;ctx.lineCap='round';const z=base*(s.sz||1);
   if(s.comet){ // комета: ледяное ядро и длинный огненный хвост
     const T=performance.now()/90;

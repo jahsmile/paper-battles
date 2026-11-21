@@ -614,7 +614,7 @@ $('pubOk').onclick=async()=>{
 /* ---------- стихии, первичный осмотр рисунка на устройстве, паспорт героя ---------- */
 const EL={fire:{name:'Огонь',ico:'🔥'},ice:{name:'Лёд',ico:'❄️'},steel:{name:'Сталь',ico:'🛡️'}};
 const BEATS={fire:'ice',ice:'steel',steel:'fire'};
-const EL0={pking:'fire',sking:'fire',stump:'steel',comet:'ice',hking:'steel',blot:'ice',pin:'fire',clip:'steel',sharp:'steel',scis:'fire',glue:'ice',eraser:'steel',duo:'steel',tking:'fire',ghoul:'fire',king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
+const EL0={vbot:'ice',bomber:'steel',pking:'fire',sking:'fire',stump:'steel',comet:'ice',hking:'steel',blot:'ice',pin:'fire',clip:'steel',sharp:'steel',scis:'fire',glue:'ice',eraser:'steel',duo:'steel',tking:'fire',ghoul:'fire',king:'fire',fort:'steel',blade:'ice',black:'steel',teeth:'fire',dino:'ice',rider:'fire',golem:'steel',saw:'steel',purple:'ice',witch:'fire'};
 function elOf(it){const o=it.ov;if(o&&EL[o.el])return o.el;const b=it.pit||it;return EL0[String(b.id).slice(2)]||b._el||(b._el=b.D&&b.D.img?scanImg(b.D.img).el:'steel')}
 // первичный осмотр: стихия по цвету, «крутость» по числу деталей и красок
 function scanImg(img){
@@ -718,8 +718,8 @@ PAGES.forEach((P,k)=>{if(!k)return;const last=k===PAGES.length-1;
   SCENES['bs'+k]=[[P.boss,'Эта страница теперь моя. Серая и тихая!'],['me','Ненадолго. Мы вернём ей цвет!']]});
 PAGES.forEach((P,k)=>{if(P.boss==='hking')SCENES['bs'+k]=[['hking','Я Король молотов! Этот город теперь мой. Четыре руки — и все для вас!'],['me','Четыре руки нас не испугают. Вперёд!']]});
 SCENES.fin=[['eraser','Всё, всё, сдаюсь! Рисуйте свой альбом…'],['me','Альбом спасён! А рисовать мы не перестанем.']];
-const HEROES=['king','dino','golem','teeth','black','duo','blade','rider','saw','fort','purple','witch','tking','ghoul','comet','stump','sking','pking'],RAR={pking:2,sking:2,stump:1,comet:2,tking:2,ghoul:1,king:0,dino:0,golem:0,teeth:0,black:0,duo:1,blade:1,rider:1,saw:1,fort:2,purple:2,witch:2};
-const FOEK=['blot','pin','clip','sharp','scis','glue'],PHERO={1:['d-teeth','d-rider'],2:['d-black','d-saw'],3:['d-purple','d-witch'],4:['d-tking','d-ghoul'],5:['d-comet','d-stump','d-sking'],6:['d-pking']},BIDS=[0,2,4,6,8,10,12];
+const HEROES=['king','dino','golem','teeth','black','duo','blade','rider','saw','fort','purple','witch','tking','ghoul','comet','stump','sking','pking','bomber','vbot'],RAR={vbot:1,bomber:2,pking:2,sking:2,stump:1,comet:2,tking:2,ghoul:1,king:0,dino:0,golem:0,teeth:0,black:0,duo:1,blade:1,rider:1,saw:1,fort:2,purple:2,witch:2};
+const FOEK=['blot','pin','clip','sharp','scis','glue'],PHERO={1:['d-teeth','d-rider'],2:['d-black','d-saw'],3:['d-purple','d-witch'],4:['d-tking','d-ghoul'],5:['d-comet','d-stump','d-sking'],6:['d-pking','d-bomber','d-vbot']},BIDS=[0,2,4,6,8,10,12];
 const CHT={w:{n:'Коробок',t:600},s:{n:'Пенал',t:3600},g:{n:'Сундук',t:14400},e:{n:'Сокровище',t:43200}};
 const SCOST=[20,60,150,450,1000],SUMN=[20,40,80];
 const pageCache={};
